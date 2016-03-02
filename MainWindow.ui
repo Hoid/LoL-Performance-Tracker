@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1776</width>
-    <height>1117</height>
+    <width>1706</width>
+    <height>1120</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,10 +17,10 @@
    <widget class="QTabWidget" name="mainTabView">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>50</x>
       <y>160</y>
-      <width>1661</width>
-      <height>841</height>
+      <width>1611</width>
+      <height>871</height>
      </rect>
     </property>
     <property name="toolTip">
@@ -32,6 +32,12 @@
     <property name="whatsThis">
      <string/>
     </property>
+    <property name="tabPosition">
+     <enum>QTabWidget::North</enum>
+    </property>
+    <property name="tabShape">
+     <enum>QTabWidget::Rounded</enum>
+    </property>
     <property name="currentIndex">
      <number>0</number>
     </property>
@@ -40,6 +46,9 @@
       <width>32</width>
       <height>32</height>
      </size>
+    </property>
+    <property name="elideMode">
+     <enum>Qt::ElideNone</enum>
     </property>
     <widget class="QWidget" name="soloQueueTab">
      <attribute name="title">
@@ -52,13 +61,39 @@
      </attribute>
     </widget>
    </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>30</y>
+      <width>1611</width>
+      <height>111</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Summoner Info</string>
+    </property>
+    <widget class="QLabel" name="summonerNameLabel">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>40</y>
+       <width>501</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Stuff</string>
+     </property>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1776</width>
+     <width>1706</width>
      <height>38</height>
     </rect>
    </property>
