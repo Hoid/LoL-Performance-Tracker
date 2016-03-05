@@ -70,20 +70,42 @@
       <height>111</height>
      </rect>
     </property>
+    <property name="styleSheet">
+     <string notr="true">font: 8pt &quot;Consolas&quot;;</string>
+    </property>
     <property name="title">
      <string>Summoner Info</string>
     </property>
     <widget class="QLabel" name="summonerNameLabel">
      <property name="geometry">
       <rect>
-       <x>70</x>
+       <x>110</x>
+       <y>30</y>
+       <width>581</width>
+       <height>71</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font: 14pt &quot;Century&quot;;</string>
+     </property>
+     <property name="text">
+      <string>summonerName</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="summonerRank">
+     <property name="geometry">
+      <rect>
+       <x>480</x>
        <y>40</y>
-       <width>501</width>
+       <width>181</width>
        <height>51</height>
       </rect>
      </property>
+     <property name="styleSheet">
+      <string notr="true">font: 9pt &quot;Century&quot;;</string>
+     </property>
      <property name="text">
-      <string>Stuff</string>
+      <string>summonerRank</string>
      </property>
     </widget>
    </widget>
