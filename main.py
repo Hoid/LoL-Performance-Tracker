@@ -25,20 +25,34 @@ class MainWindow(QMainWindow):
         summonerRegion = "na"
         
         self.showSummonerNameInputBox()
-        
         self.getSummonerInfo()
+        summonerRank = self.getSummonerRank()
         
-        self.ui.summonerNameLabel.setText(str(summonerName))
-        self.ui.summonerRank.setText(str(summonerId))
+        if summonerName:
+            self.ui.summonerNameLabel.setText(summonerName)
+        if summonerRank:
+            self.ui.summonerRank.setText(summonerRank)
         
         self.ui.show()
 
     def getSummonerInfo(self):
         global summonerId,  summonerName
-        summonerInfoResponse = requests.get("https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" + summonerName + "?api_key=" + apiKey)
+        requestURL = "https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" + summonerName + "?api_key=" + apiKey
+        summonerInfoResponse = requests.get(requestURL)
         summonerInfoResponse = json.loads(summonerInfoResponse.text)
         summonerId = summonerInfoResponse[summonerName]["id"]
         summonerName = summonerInfoResponse[summonerName]["name"]
+
+    def getSummonerRank(self):
+        summonerIdStr = str(summonerId)
+        requestURL = "https://na.api.pvp.net/api/lol/na/v2.5/league/by-summoner/" + summonerIdStr + "/entry?api_key=" + apiKey
+        summonerInfoResponse = requests.get(requestURL)
+        summonerInfoResponse = json.loads(summonerInfoResponse.text)
+        summonerTier = summonerInfoResponse[summonerIdStr][0]["tier"].lower().capitalize()
+        summonerDivision = summonerInfoResponse[summonerIdStr][0]["entries"][0]["division"]
+        summonerLp = summonerInfoResponse[summonerIdStr][0]["entries"][0]["leaguePoints"]
+        summonerRank = summonerTier + " " + summonerDivision + ", " + str(summonerLp) + "lp"
+        return summonerRank
 
     def showSummonerNameInputBox(self):
         text, ok = QInputDialog.getText(self, 'Summoner info', 
