@@ -95,17 +95,23 @@
     <widget class="QLabel" name="summonerRank">
      <property name="geometry">
       <rect>
-       <x>480</x>
+       <x>1270</x>
        <y>40</y>
-       <width>181</width>
+       <width>261</width>
        <height>51</height>
       </rect>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
      </property>
      <property name="styleSheet">
       <string notr="true">font: 9pt &quot;Century&quot;;</string>
      </property>
      <property name="text">
       <string>summonerRank</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
    </widget>
