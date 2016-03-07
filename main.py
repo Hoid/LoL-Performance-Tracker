@@ -4,7 +4,7 @@
 # pulls the summonerName, summonerRegion, and summonerId, and handles
 # the first time opening the application
 
-import sys
+import sys,  os
 from PyQt4.QtGui import QApplication, QMainWindow,  QInputDialog,  QMessageBox
 from PyQt4 import uic
 import requests,  json
@@ -35,6 +35,9 @@ class MainWindow(QMainWindow):
             self.ui.summonerRank.setText(summonerRank)
         
         self.ui.show()
+        
+        self.getMatchHistory()
+
 
     def getSummonerInfo(self):
         global summonerId,  summonerName,  summonerNameFull
@@ -63,6 +66,19 @@ class MainWindow(QMainWindow):
         else:
             print responseMessage
             return "Could not get summoner rank"
+    
+    def getMatchHistory(self):
+        requestURL = "https://na.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/" + str(summonerId) + "?seasons=SEASON2016&api_key=" + apiKey
+        matchHistoryResponse = requests.get(requestURL)
+        responseMessage = self.checkResponseCode(matchHistoryResponse)
+        if responseMessage == "ok":
+            matchHistoryResponse = matchHistoryResponse.text
+            __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+            __location__ = __location__ + '\matchhistory.txt'
+            f = open(__location__,  'w')
+            f.write(matchHistoryResponse)
+        else:
+            print responseMessage
 
     def checkResponseCode(self,  response):
         codes = {

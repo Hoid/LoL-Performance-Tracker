@@ -54,6 +54,45 @@
      <attribute name="title">
       <string>Solo Queue</string>
      </attribute>
+     <widget class="QScrollArea" name="matchHistory">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>70</y>
+        <width>991</width>
+        <height>731</height>
+       </rect>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>989</width>
+         <height>729</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QLabel" name="matchHistoryLabel">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>20</y>
+        <width>211</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 12pt &quot;Century Gothic&quot;;</string>
+      </property>
+      <property name="text">
+       <string>Match History</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="compareTab">
      <attribute name="title">
@@ -71,7 +110,7 @@
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 8pt &quot;Consolas&quot;;</string>
+     <string notr="true">font: 8pt &quot;Century Gothic&quot;;</string>
     </property>
     <property name="title">
      <string>Summoner Info</string>
@@ -86,7 +125,7 @@
       </rect>
      </property>
      <property name="styleSheet">
-      <string notr="true">font: 14pt &quot;Century&quot;;</string>
+      <string notr="true">font: 14pt &quot;Century Gothic&quot;;</string>
      </property>
      <property name="text">
       <string>summonerName</string>
@@ -105,7 +144,7 @@
       <enum>Qt::LeftToRight</enum>
      </property>
      <property name="styleSheet">
-      <string notr="true">font: 9pt &quot;Century&quot;;</string>
+      <string notr="true">font: 9pt &quot;Century Gothic&quot;;</string>
      </property>
      <property name="text">
       <string>summonerRank</string>
