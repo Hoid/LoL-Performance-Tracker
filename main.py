@@ -5,29 +5,33 @@
 # the first time opening the application. Right now, this file does everything.
 
 import sys,  os
+
 from PyQt4.QtGui import QApplication, QMainWindow,  QInputDialog,  QMessageBox
 from PyQt4 import uic
 import requests,  json
+from ConfigParser import SafeConfigParser
 
-import showMainWindow,  config
+import showMainWindow
 
 summonerName = ""
 summonerNameFull = ""
-summonerRegion = ""
+summonerRegion = "na"
 summonerId = ""
+summonerRank = ""
 apiKey = "9a5609ad-2d90-4aff-a09f-dc86632f3770"
 
 class MainWindow(QMainWindow):
     
     def __init__(self):
-        super(QMainWindow,  self).__init__()
-        self.ui = uic.loadUi('C:/Users/cheek/Documents/Code/LoL-Performance-Tracker/MainWindow.ui')
-        global summonerId,  summonerRegion
-        summonerRegion = "na"
         
-        self.showSummonerNameInputBox()
-        self.getSummonerInfo()
-        summonerRank = self.getSummonerRank()
+        global summonerName, summonerNameFull, summonerId, summonerRegion,  summonerRank
+        super(QMainWindow,  self).__init__()
+        
+        # load UI
+        self.ui = uic.loadUi('C:/Users/cheek/Documents/Code/LoL-Performance-Tracker/MainWindow.ui')
+        
+        # set up or read config.ini
+        self.processConfigFile()
         
         if summonerName:
             self.ui.summonerNameLabel.setText(summonerNameFull)
@@ -36,8 +40,57 @@ class MainWindow(QMainWindow):
         
         self.ui.show()
         
-        self.getMatchHistoryDetails()
+        #self.getMatchHistoryDetails()
 
+    def processConfigFile(self):
+        global summonerName, summonerNameFull, summonerId, summonerRegion,  summonerRank
+        configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        configFileLocation = configFileLocation + "\config.ini"
+        isFile = os.path.isfile(configFileLocation)
+        config = SafeConfigParser()
+        if not isFile:
+            print "created config file"
+            file = open(configFileLocation,  'w')
+            config.read(configFileLocation)
+            config.add_section('main')
+            config.set('main',  'isFirstTimeOpening',  'True')
+            with open(configFileLocation, 'w') as f:
+                config.write(f)
+            isFirstTimeOpening = True
+        else:
+            config.read(configFileLocation)
+            if not config.has_section('main'):
+                config.add_section('main')
+                config.set('main',  'isFirstTimeOpening',  'True')
+                with open(configFileLocation, 'w') as f:
+                    config.write(f)
+                config.read(configFileLocation)
+            isFirstTimeOpening = config.get('main',  'isFirstTimeOpening')
+            if isFirstTimeOpening == "False":
+                isFirstTimeOpening = False
+            else:
+                isFirstTimeOpening = True
+        if isFirstTimeOpening:
+            self.showSummonerNameInputBox()
+            self.getSummonerInfo()
+            summonerRank = self.getSummonerRank()
+            config.set('main',  'summonerName',  summonerName)
+            config.set('main',  'summonerNameFull',  summonerNameFull)
+            config.set('main',  'summonerId',  str(summonerId))
+            config.set('main',  'summonerRank',  summonerRank)
+            config.set('main',  'isFirstTimeOpening',  'False')
+            with open(configFileLocation, 'w') as f:
+                config.write(f)
+        else: 
+            config.read(configFileLocation)
+            hasMainSection = config.has_section('main')
+            if not hasMainSection:
+                config.add_section('main')
+            # read summoner info from config file
+            summonerName = config.get('main',  'summonerName')
+            summonerNameFull = config.get('main',  'summonerNameFull')
+            summonerId = config.get('main',  'summonerId')
+            summonerRank = config.get('main',  'summonerRank')
 
     def getSummonerInfo(self):
         global summonerId,  summonerName,  summonerNameFull
@@ -75,9 +128,9 @@ class MainWindow(QMainWindow):
             
             # write match history in json form to a file
             matchHistoryResponse = matchHistoryResponse.text
-            __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-            __location__ = __location__ + '\match_history.txt'
-            f = open(__location__,  'w')
+            fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+            fileLocation = fileLocation + '\match_history.txt'
+            f = open(fileLocation,  'w')
             json.dump(matchHistoryResponse,  f)
             
             #decode match history from json and return it
@@ -104,9 +157,9 @@ class MainWindow(QMainWindow):
                 print "For match " + matchId + ", " + responseMessage
         print matchHistoryDetails
         matchHistoryDetailsJson = json.dumps(matchHistoryDetails)
-        __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        __location__ = __location__ + '\match_history_details.txt'
-        f = open(__location__,  'w')
+        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        fileLocation = fileLocation + '\match_history_details.txt'
+        f = open(fileLocation,  'w')
         json.dump(matchHistoryDetailsJson,  f)
 
     def checkResponseCode(self,  response):
@@ -140,15 +193,11 @@ class MainWindow(QMainWindow):
         else: 
             pass
 
-#            __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-#            __location__ = __location__ + '\matchhistory.txt'
-#            f = open(__location__,  'w')
-#            f.write(matchHistoryResponse)
 
 def main():
     app = QApplication(sys.argv)
     form = MainWindow()
-    sys.exit(app.exec_())
+    app.exec_()
 
 if __name__ == '__main__':
     main()
