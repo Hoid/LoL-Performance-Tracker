@@ -2,7 +2,7 @@
 #
 # This file contains the main function that creates an instance of MainWindow, 
 # pulls the summonerName, summonerRegion, and summonerId, and handles
-# the first time opening the application
+# the first time opening the application. Right now, this file does everything.
 
 import sys,  os
 from PyQt4.QtGui import QApplication, QMainWindow,  QInputDialog,  QMessageBox
@@ -36,7 +36,7 @@ class MainWindow(QMainWindow):
         
         self.ui.show()
         
-        self.getMatchHistory()
+        self.getMatchHistoryDetails()
 
 
     def getSummonerInfo(self):
@@ -72,13 +72,42 @@ class MainWindow(QMainWindow):
         matchHistoryResponse = requests.get(requestURL)
         responseMessage = self.checkResponseCode(matchHistoryResponse)
         if responseMessage == "ok":
+            
+            # write match history in json form to a file
             matchHistoryResponse = matchHistoryResponse.text
             __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-            __location__ = __location__ + '\matchhistory.txt'
+            __location__ = __location__ + '\match_history.txt'
             f = open(__location__,  'w')
-            f.write(matchHistoryResponse)
+            json.dump(matchHistoryResponse,  f)
+            
+            #decode match history from json and return it
+            matchHistoryResponse = json.loads(matchHistoryResponse)
+            return matchHistoryResponse
+            
         else:
             print responseMessage
+            return "Could not get match history"
+
+    def getMatchHistoryDetails(self):
+        matchHistory = self.getMatchHistory()
+        matchHistory = matchHistory["matches"]
+        matchHistoryDetails = [] # For now, just make a new match history each time we start the program. Afterwards, read match history from file and only load the matches that are new.
+        for match in range(5):
+            matchId = matchHistory[match]["matchId"]
+            requestURL = "https://na.api.pvp.net/api/lol/na/v2.2/match/" + str(matchId) + "?api_key=" + apiKey
+            matchDetailsResponse = requests.get(requestURL)
+            responseMessage = self.checkResponseCode(matchDetailsResponse)
+            if responseMessage == "ok":
+                matchDetailsResponse = json.loads(matchDetailsResponse.text)
+                matchHistoryDetails.append(matchDetailsResponse)
+            else:
+                print "For match " + matchId + ", " + responseMessage
+        print matchHistoryDetails
+        matchHistoryDetailsJson = json.dumps(matchHistoryDetails)
+        __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        __location__ = __location__ + '\match_history_details.txt'
+        f = open(__location__,  'w')
+        json.dump(matchHistoryDetailsJson,  f)
 
     def checkResponseCode(self,  response):
         codes = {
@@ -111,7 +140,10 @@ class MainWindow(QMainWindow):
         else: 
             pass
 
-
+#            __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+#            __location__ = __location__ + '\matchhistory.txt'
+#            f = open(__location__,  'w')
+#            f.write(matchHistoryResponse)
 
 def main():
     app = QApplication(sys.argv)
