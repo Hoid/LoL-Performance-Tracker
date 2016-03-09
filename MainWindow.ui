@@ -59,18 +59,18 @@
        <rect>
         <x>30</x>
         <y>30</y>
-        <width>211</width>
+        <width>241</width>
         <height>41</height>
        </rect>
       </property>
       <property name="styleSheet">
-       <string notr="true">font: 12pt &quot;Century Gothic&quot;;</string>
+       <string notr="true">font: 12pt &quot;Verdana&quot;;</string>
       </property>
       <property name="text">
        <string>Match History</string>
       </property>
      </widget>
-     <widget class="QScrollArea" name="scrollArea">
+     <widget class="QScrollArea" name="matchHistoryScrollArea">
       <property name="geometry">
        <rect>
         <x>20</x>
@@ -123,7 +123,7 @@
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 8pt &quot;Century Gothic&quot;;</string>
+     <string notr="true">font: 8pt &quot;Verdana&quot;;</string>
     </property>
     <property name="title">
      <string>Summoner Info</string>
