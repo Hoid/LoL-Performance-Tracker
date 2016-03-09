@@ -6,7 +6,8 @@
 
 import sys,  os
 
-from PyQt4.QtGui import QApplication, QMainWindow,  QInputDialog,  QMessageBox
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 from PyQt4 import uic
 import requests,  json
 from ConfigParser import SafeConfigParser
@@ -28,19 +29,21 @@ class MainWindow(QMainWindow):
         super(QMainWindow,  self).__init__()
         
         # load UI
-        self.ui = uic.loadUi('C:/Users/cheek/Documents/Code/LoL-Performance-Tracker/MainWindow.ui')
+        self.ui = uic.loadUi('C:/Users/cheek/Documents/Code/LoL-Performance-Tracker/MainWindow.ui',  self)
         
         # set up or read config.ini
         self.processConfigFile()
+        
+        self.getMatchHistoryWorkerThread = getMatchHistoryWorkerThread()
+        self.getMatchHistoryWorkerThread.start()
         
         if summonerName:
             self.ui.summonerNameLabel.setText(summonerNameFull)
         if summonerRank:
             self.ui.summonerRank.setText(summonerRank)
         
-        self.ui.show()
-        
-        #self.getMatchHistoryDetails()
+        #self.ui.btnExit.clicked.connect(self.close)
+        #self.ui.actionExit.triggered.connect(self.close)
 
     def processConfigFile(self):
         global summonerName, summonerNameFull, summonerId, summonerRegion,  summonerRank
@@ -119,6 +122,45 @@ class MainWindow(QMainWindow):
         else:
             print responseMessage
             return "Could not get summoner rank"
+
+    def checkResponseCode(self,  response):
+        codes = {
+            200: "ok", 
+            400: "bad request", 
+            401: "unauthorized", 
+            404: "entity not found", 
+            429: "rate limit exceeded", 
+            500: "internal server error", 
+            503: "service unavailable"
+        }
+        responseMessage = codes.get(response.status_code,  "code not recognized")
+        return responseMessage
+
+    def showSummonerNameInputBox(self):
+        text, ok = QInputDialog.getText(self, 'Summoner info', 
+            'Enter your summoner name:')
+        if ok:
+            global summonerName
+            summonerName = str(text).replace(" ", "").lower()
+        else:
+            self.closeApplication()
+
+    def closeEvent(self, event):
+        reply = QMessageBox.question(self, 'Message', "Are you sure to quit?", QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
+
+
+class getMatchHistoryWorkerThread(QThread):
+    
+    def __init__(self):
+        super(getMatchHistoryWorkerThread,  self).__init__()
+    
+    def run(self):
+        global summonerName, summonerNameFull, summonerId, summonerRegion,  summonerRank
+        self.getMatchHistoryDetails()
     
     def getMatchHistory(self):
         requestURL = "https://na.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/" + str(summonerId) + "?seasons=SEASON2016&api_key=" + apiKey
@@ -155,13 +197,13 @@ class MainWindow(QMainWindow):
                 matchHistoryDetails.append(matchDetailsResponse)
             else:
                 print "For match " + matchId + ", " + responseMessage
-        print matchHistoryDetails
         matchHistoryDetailsJson = json.dumps(matchHistoryDetails)
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         fileLocation = fileLocation + '\match_history_details.txt'
         f = open(fileLocation,  'w')
         json.dump(matchHistoryDetailsJson,  f)
-
+        print "Populated match_history_details"
+    
     def checkResponseCode(self,  response):
         codes = {
             200: "ok", 
@@ -175,29 +217,11 @@ class MainWindow(QMainWindow):
         responseMessage = codes.get(response.status_code,  "code not recognized")
         return responseMessage
 
-    def showSummonerNameInputBox(self):
-        text, ok = QInputDialog.getText(self, 'Summoner info', 
-            'Enter your summoner name:')
-        if ok:
-            global summonerName
-            summonerName = str(text).replace(" ", "").lower()
-        else:
-            self.closeApplication()
-
-    def closeApplication(self):
-        choice = QMessageBox.question(self,  "Quit",  "Are you sure you want to quit?",  QMessageBox.Yes | QMessageBox.No)
-        #TODO: Handle closing of the application gracefully and store needed information for later
-        if (choice == QMessageBox.Yes):
-            print "Exiting application"
-            sys.exit()
-        else: 
-            pass
-
-
 def main():
     app = QApplication(sys.argv)
-    form = MainWindow()
-    app.exec_()
+    mainWindow = MainWindow()
+    mainWindow.show()
+    sys.exit(app.exec_())
 
 if __name__ == '__main__':
     main()
