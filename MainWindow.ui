@@ -54,12 +54,28 @@
      <attribute name="title">
       <string>Solo Queue</string>
      </attribute>
-     <widget class="QScrollArea" name="matchHistory">
+     <widget class="QLabel" name="matchHistoryLabel">
       <property name="geometry">
        <rect>
         <x>30</x>
-        <y>70</y>
-        <width>991</width>
+        <y>30</y>
+        <width>211</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 12pt &quot;Century Gothic&quot;;</string>
+      </property>
+      <property name="text">
+       <string>Match History</string>
+      </property>
+     </widget>
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>80</y>
+        <width>1041</width>
         <height>731</height>
        </rect>
       </property>
@@ -71,27 +87,24 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>989</width>
+         <width>1039</width>
          <height>729</height>
         </rect>
        </property>
+       <widget class="QGroupBox" name="match0">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>1001</width>
+          <height>161</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>champion name here</string>
+        </property>
+       </widget>
       </widget>
-     </widget>
-     <widget class="QLabel" name="matchHistoryLabel">
-      <property name="geometry">
-       <rect>
-        <x>30</x>
-        <y>20</y>
-        <width>211</width>
-        <height>41</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">font: 12pt &quot;Century Gothic&quot;;</string>
-      </property>
-      <property name="text">
-       <string>Match History</string>
-      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="compareTab">
@@ -125,7 +138,7 @@
       </rect>
      </property>
      <property name="styleSheet">
-      <string notr="true">font: 14pt &quot;Century Gothic&quot;;</string>
+      <string notr="true">font: 14pt &quot;Verdana&quot;;</string>
      </property>
      <property name="text">
       <string>summonerName</string>
@@ -144,7 +157,7 @@
       <enum>Qt::LeftToRight</enum>
      </property>
      <property name="styleSheet">
-      <string notr="true">font: 9pt &quot;Century Gothic&quot;;</string>
+      <string notr="true">font: 9pt &quot;Verdana&quot;;</string>
      </property>
      <property name="text">
       <string>summonerRank</string>
