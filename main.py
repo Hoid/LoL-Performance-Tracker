@@ -1,18 +1,17 @@
-# main.py
+# Filename: main.py
 #
-# This file contains the main function that creates an instance of MainWindow, 
-# pulls the summonerName, summonerRegion, and summonerId, and handles
-# the first time opening the application. Right now, this file does everything.
+# Description: This file contains the main function that creates an instance of MainWindow, 
+# handles the first time opening the application, and processes a configuration file. 
 
-import sys,  os
+import sys, os
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from PyQt4 import uic
+
 import requests,  json
 from ConfigParser import SafeConfigParser
 
-import showMainWindow
 from workerThreads import getMatchHistoryWorkerThread
 
 summonerName = ""
@@ -35,6 +34,7 @@ class MainWindow(QMainWindow):
         # set up or read config.ini
         self.processConfigFile()
         
+        # start a thread to populate match_history.txt and match_history_details.txt
         self.getMatchHistoryWorkerThread = getMatchHistoryWorkerThread()
         self.getMatchHistoryWorkerThread.start()
         
@@ -42,9 +42,63 @@ class MainWindow(QMainWindow):
             self.ui.summonerNameLabel.setText(summonerNameFull)
         if summonerRank:
             self.ui.summonerRank.setText(summonerRank)
-        
-        #self.ui.btnExit.clicked.connect(self.close)
-        #self.ui.actionExit.triggered.connect(self.close)
+
+    def checkResponseCode(self,  response):
+        codes = {
+            200: "ok", 
+            400: "bad request", 
+            401: "unauthorized", 
+            404: "entity not found", 
+            429: "rate limit exceeded", 
+            500: "internal server error", 
+            503: "service unavailable"
+        }
+        responseMessage = codes.get(response.status_code,  "code not recognized")
+        return responseMessage
+    
+    def closeEvent(self, event):
+        reply = QMessageBox.question(self, 'Message', 
+                                                    "Are you sure to quit?", 
+                                                    QMessageBox.Yes, 
+                                                    QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            event.accept()
+        else:
+            event.ignore()
+    
+    def getSummonerInfo(self):
+        global summonerId,  summonerName,  summonerNameFull
+        requestURL = ("https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" 
+                                + summonerName 
+                                + "?api_key=" 
+                                + apiKey)
+        summonerInfoResponse = requests.get(requestURL)
+        responseMessage = self.checkResponseCode(summonerInfoResponse)
+        if responseMessage == "ok":
+            summonerInfoResponse = json.loads(summonerInfoResponse.text)
+            summonerId = summonerInfoResponse[summonerName]["id"]
+            summonerNameFull = summonerInfoResponse[summonerName]["name"]
+        else:
+            print responseMessage
+
+    def getSummonerRank(self):
+        summonerIdStr = str(summonerId)
+        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.5/league/by-summoner/" 
+                                + summonerIdStr 
+                                + "/entry?api_key=" 
+                                + apiKey)
+        summonerInfoResponse = requests.get(requestURL)
+        responseMessage = self.checkResponseCode(summonerInfoResponse)
+        if responseMessage == "ok":
+            summonerInfoResponse = json.loads(summonerInfoResponse.text)
+            summonerTier = summonerInfoResponse[summonerIdStr][0]["tier"].lower().capitalize()
+            summonerDivision = summonerInfoResponse[summonerIdStr][0]["entries"][0]["division"]
+            summonerLp = summonerInfoResponse[summonerIdStr][0]["entries"][0]["leaguePoints"]
+            summonerRank = summonerTier + " " + summonerDivision + ", " + str(summonerLp) + "lp"
+            return summonerRank
+        else:
+            print responseMessage
+            return "Could not get summoner rank"
 
     def processConfigFile(self):
         global summonerName, summonerNameFull, summonerId, summonerRegion,  summonerRank
@@ -97,47 +151,6 @@ class MainWindow(QMainWindow):
             summonerId = config.get('main',  'summonerId')
             summonerRank = config.get('main',  'summonerRank')
 
-    def getSummonerInfo(self):
-        global summonerId,  summonerName,  summonerNameFull
-        requestURL = "https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" + summonerName + "?api_key=" + apiKey
-        summonerInfoResponse = requests.get(requestURL)
-        responseMessage = self.checkResponseCode(summonerInfoResponse)
-        if responseMessage == "ok":
-            summonerInfoResponse = json.loads(summonerInfoResponse.text)
-            summonerId = summonerInfoResponse[summonerName]["id"]
-            summonerNameFull = summonerInfoResponse[summonerName]["name"]
-        else:
-            print responseMessage
-
-    def getSummonerRank(self):
-        summonerIdStr = str(summonerId)
-        requestURL = "https://na.api.pvp.net/api/lol/na/v2.5/league/by-summoner/" + summonerIdStr + "/entry?api_key=" + apiKey
-        summonerInfoResponse = requests.get(requestURL)
-        responseMessage = self.checkResponseCode(summonerInfoResponse)
-        if responseMessage == "ok":
-            summonerInfoResponse = json.loads(summonerInfoResponse.text)
-            summonerTier = summonerInfoResponse[summonerIdStr][0]["tier"].lower().capitalize()
-            summonerDivision = summonerInfoResponse[summonerIdStr][0]["entries"][0]["division"]
-            summonerLp = summonerInfoResponse[summonerIdStr][0]["entries"][0]["leaguePoints"]
-            summonerRank = summonerTier + " " + summonerDivision + ", " + str(summonerLp) + "lp"
-            return summonerRank
-        else:
-            print responseMessage
-            return "Could not get summoner rank"
-
-    def checkResponseCode(self,  response):
-        codes = {
-            200: "ok", 
-            400: "bad request", 
-            401: "unauthorized", 
-            404: "entity not found", 
-            429: "rate limit exceeded", 
-            500: "internal server error", 
-            503: "service unavailable"
-        }
-        responseMessage = codes.get(response.status_code,  "code not recognized")
-        return responseMessage
-
     def showSummonerNameInputBox(self):
         text, ok = QInputDialog.getText(self, 'Summoner info', 
             'Enter your summoner name:')
@@ -146,15 +159,6 @@ class MainWindow(QMainWindow):
             summonerName = str(text).replace(" ", "").lower()
         else:
             self.closeApplication()
-
-    def closeEvent(self, event):
-        reply = QMessageBox.question(self, 'Message', "Are you sure to quit?", QMessageBox.Yes, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            event.accept()
-        else:
-            event.ignore()
-
-
 
 
 def main():
