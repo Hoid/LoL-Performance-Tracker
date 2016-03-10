@@ -10,10 +10,10 @@ from PyQt4.QtCore import *
 import requests,  json
 from ConfigParser import SafeConfigParser
 
-class getMatchHistoryWorkerThread(QThread):
+class MatchHistoryWorkerThread(QThread):
     
     def __init__(self):
-        super(getMatchHistoryWorkerThread,  self).__init__()
+        super(QThread,  self).__init__()
     
     def run(self):
         global apiKey
@@ -55,7 +55,7 @@ class getMatchHistoryWorkerThread(QThread):
             f = open(fileLocation,  'w')
             json.dump(matchHistoryResponse,  f)
             
-            #decode match history from json and return it
+            # decode match history from json and return it
             matchHistoryResponse = json.loads(matchHistoryResponse)
             return matchHistoryResponse
             

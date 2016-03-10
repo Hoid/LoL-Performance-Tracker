@@ -12,7 +12,8 @@ from PyQt4 import uic
 import requests,  json
 from ConfigParser import SafeConfigParser
 
-from workerThreads import getMatchHistoryWorkerThread
+from workerThreads import MatchHistoryWorkerThread
+from buildMatchHistory import BuildMatchHistory
 
 summonerName = ""
 summonerNameFull = ""
@@ -35,7 +36,7 @@ class MainWindow(QMainWindow):
         self.processConfigFile()
         
         # start a thread to populate match_history.txt and match_history_details.txt
-        self.getMatchHistoryWorkerThread = getMatchHistoryWorkerThread()
+        self.getMatchHistoryWorkerThread = MatchHistoryWorkerThread()
         self.getMatchHistoryWorkerThread.start()
         
         if summonerName:
@@ -106,6 +107,10 @@ class MainWindow(QMainWindow):
         configFileLocation = configFileLocation + "\config.ini"
         isFile = os.path.isfile(configFileLocation)
         config = SafeConfigParser()
+        
+        # If the file hasn't been created, create it, add a section 'main', and set isFirstTimeOpening to True.
+        # Otherwise, see if this is still the first time opening. This is possible if the program has created the 
+        # config file but hasn't initialized it.
         if not isFile:
             print "created config file"
             file = open(configFileLocation,  'w')
@@ -128,6 +133,9 @@ class MainWindow(QMainWindow):
                 isFirstTimeOpening = False
             else:
                 isFirstTimeOpening = True
+        
+        # If this is the first time opening, initialize important values.
+        # Otherwise, read values from the file.
         if isFirstTimeOpening:
             self.showSummonerNameInputBox()
             self.getSummonerInfo()
@@ -165,6 +173,8 @@ def main():
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()
+    buildMatchHistory = BuildMatchHistory()
+    buildMatchHistory.buildMatchHistory(mainWindow)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
