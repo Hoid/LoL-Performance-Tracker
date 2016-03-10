@@ -36,8 +36,8 @@ class MainWindow(QMainWindow):
         self.processConfigFile()
         
         # start a thread to populate match_history.txt and match_history_details.txt
-        self.getMatchHistoryWorkerThread = MatchHistoryWorkerThread()
-        self.getMatchHistoryWorkerThread.start()
+        #self.getMatchHistoryWorkerThread = MatchHistoryWorkerThread()
+        #self.getMatchHistoryWorkerThread.start()
         
         if summonerName:
             self.ui.summonerNameLabel.setText(summonerNameFull)

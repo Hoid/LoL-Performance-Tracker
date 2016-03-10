@@ -73,7 +73,7 @@
      <widget class="QScrollArea" name="matchHistoryScrollArea">
       <property name="geometry">
        <rect>
-        <x>20</x>
+        <x>28</x>
         <y>80</y>
         <width>991</width>
         <height>731</height>
@@ -96,8 +96,8 @@
          <rect>
           <x>10</x>
           <y>10</y>
-          <width>941</width>
-          <height>161</height>
+          <width>940</width>
+          <height>170</height>
          </rect>
         </property>
         <property name="title">
@@ -139,9 +139,9 @@
          <property name="geometry">
           <rect>
            <x>440</x>
-           <y>80</y>
+           <y>90</y>
            <width>131</width>
-           <height>71</height>
+           <height>61</height>
           </rect>
          </property>
          <property name="title">
@@ -187,9 +187,9 @@
          <property name="geometry">
           <rect>
            <x>600</x>
-           <y>80</y>
+           <y>90</y>
            <width>131</width>
-           <height>71</height>
+           <height>61</height>
           </rect>
          </property>
          <property name="title">
@@ -228,6 +228,17 @@
           <string>Lane</string>
          </property>
         </widget>
+       </widget>
+       <widget class="QWidget" name="gridLayoutWidget">
+        <property name="geometry">
+         <rect>
+          <x>320</x>
+          <y>320</y>
+          <width>331</width>
+          <height>151</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout"/>
        </widget>
       </widget>
      </widget>
