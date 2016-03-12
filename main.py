@@ -35,15 +35,11 @@ class MainWindow(QMainWindow):
         # set up or read config.ini
         self.processConfigFile()
         
-        # start a thread to populate match_history.txt and match_history_details.txt
-        #self.getMatchHistoryWorkerThread = MatchHistoryWorkerThread()
-        #self.getMatchHistoryWorkerThread.start()
-        
         if summonerName:
             self.ui.summonerNameLabel.setText(summonerNameFull)
         if summonerRank:
             self.ui.summonerRank.setText(summonerRank)
-
+    
     def checkResponseCode(self,  response):
         codes = {
             200: "ok", 
@@ -120,6 +116,7 @@ class MainWindow(QMainWindow):
             with open(configFileLocation, 'w') as f:
                 config.write(f)
             isFirstTimeOpening = True
+            file.close()
         else:
             config.read(configFileLocation)
             if not config.has_section('main'):
@@ -172,10 +169,14 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
-    mainWindow.show()
+    matchHistoryWorkerThread = MatchHistoryWorkerThread(mainWindow)
+    matchHistoryWorkerThread.start()
+    matchHistoryWorkerThread.wait()
     buildMatchHistory = BuildMatchHistory()
     buildMatchHistory.buildMatchHistory(mainWindow)
+    mainWindow.show()
     sys.exit(app.exec_())
+    
 
 if __name__ == '__main__':
     main()

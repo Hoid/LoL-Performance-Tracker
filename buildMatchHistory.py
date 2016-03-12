@@ -13,16 +13,37 @@ from PyQt4 import uic
 import requests,  json
 from ConfigParser import SafeConfigParser
 
+apiKey = ""
+
 class BuildMatchHistory(QWidget):
     
     def __init__(self):
         super(QWidget,  self).__init__()
+        config = SafeConfigParser()
+        configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        configFileLocation = configFileLocation + "\config.ini"
+        config.read(configFileLocation)
+        apiKey = config.get('main', 'apiKey')
     
-    def buildMatch(self):
+    def buildMatch(self, matchIndex):
+        
+        # Open match_history.txt and store json data in matchHistoryData
+        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        fileLocation = fileLocation + '\match_history.txt'
+        f = open(fileLocation,  'r')
+        matchHistoryData = json.load(f)
+        matchHistoryData = json.loads(matchHistoryData)
+        
+        # Load champion name and lane from matchHistoryData
+        championId = matchHistoryData["matches"][matchIndex]["champion"]
+        championName = self.getChampionName(championId)
+        lane = matchHistoryData["matches"][matchIndex]["lane"].lower().capitalize()
+        
+        # Close the open file
+        f.close()
         
         # Build the match GroupBox itself with the champion name played as the title
-        champion = "champion"
-        match = QGroupBox(champion)
+        match = QGroupBox(championName)
         match.setFixedHeight(170)
         match.setFixedWidth(940)
         
@@ -79,18 +100,31 @@ class BuildMatchHistory(QWidget):
         wardScoreBox.setTitle("ward score")
         csPerMinBox.setTitle("cs/min")
         changeInLPLabel.setText("+lp")
-        laneLabel.setText("Lane")
+        laneLabel.setText(lane)
         
         return match
     
     def buildMatchHistory(self,  mainWindow):
         
+        # Open match_history.txt and store json data in matchHistoryData
+        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        fileLocation = fileLocation + '\match_history.txt'
+        f = open(fileLocation,  'r')
+        matchHistoryData = json.load(f)
+        matchHistoryData = json.loads(matchHistoryData)
+        
+        # Find the number of matches in matchHistoryData
+        numberOfMatches = matchHistoryData["totalGames"]
+        
+        # Close the open file
+        f.close()
+        
         # Container Widget       
         widget = QWidget()
         # Layout of Container Widget
         layout = QVBoxLayout(self)
-        for _ in range(20):
-            match = self.buildMatch()
+        for matchIndex in range(numberOfMatches):
+            match = self.buildMatch(matchIndex)
             layout.addWidget(match)
         widget.setLayout(layout)
         
@@ -102,6 +136,37 @@ class BuildMatchHistory(QWidget):
     
     def calculateAverages(self):
         pass
+    
+    def checkResponseCode(self,  response):
+        codes = {
+            200: "ok", 
+            400: "bad request", 
+            401: "unauthorized", 
+            404: "entity not found", 
+            429: "rate limit exceeded", 
+            500: "internal server error", 
+            503: "service unavailable"
+        }
+        responseMessage = codes.get(response.status_code,  "code not recognized")
+        return responseMessage
+    
+    def getChampionName(self, championId):
+        champions = {
+            56: "Nocturne"
+        }
+        requestURL = ("https://global.api.pvp.net/api/lol/static-data/na/v1.2/champion/" 
+                                + str(championId)
+                                + "?champData=info&api_key=" 
+                                + apiKey)
+        championNameResponse = requests.get(requestURL)
+        responseMessage = self.checkResponseCode(championNameResponse)
+        if responseMessage == "ok":
+            championNameResponse = championNameResponse.text
+            championNameResponse = json.loads(championNameResponse)
+            return championNameResponse["name"]
+        else:
+            print responseMessage + ", from getChampionName method"
+            return "Champion name unknown"
     
     def parseMatchHistoryDetails(self):
         pass

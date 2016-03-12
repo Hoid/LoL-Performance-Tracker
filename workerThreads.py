@@ -12,8 +12,9 @@ from ConfigParser import SafeConfigParser
 
 class MatchHistoryWorkerThread(QThread):
     
-    def __init__(self):
+    def __init__(self, mainWindow):
         super(QThread,  self).__init__()
+        self.mainWindow = mainWindow
     
     def run(self):
         global apiKey
@@ -36,7 +37,7 @@ class MatchHistoryWorkerThread(QThread):
             500: "internal server error", 
             503: "service unavailable"
         }
-        responseMessage = codes.get(response.status_code,  "code not recognized")
+        responseMessage = codes.get(response.status_code,  "response code not recognized")
         return responseMessage
     
     def getMatchHistory(self,  summonerId):
@@ -48,19 +49,20 @@ class MatchHistoryWorkerThread(QThread):
         responseMessage = self.checkResponseCode(matchHistoryResponse)
         if responseMessage == "ok":
             
-            # write match history in json form to a file
+            # Write match history in json form to a file
             matchHistoryResponse = matchHistoryResponse.text
             fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
             fileLocation = fileLocation + '\match_history.txt'
             f = open(fileLocation,  'w')
             json.dump(matchHistoryResponse,  f)
+            f.close()
             
-            # decode match history from json and return it
+            # Decode match history from json and return it
             matchHistoryResponse = json.loads(matchHistoryResponse)
             return matchHistoryResponse
             
         else:
-            print responseMessage
+            print responseMessage + ", from getMatchHistory method"
             return "Could not get match history"
 
     def getMatchHistoryDetails(self,  summonerId):
@@ -79,10 +81,11 @@ class MatchHistoryWorkerThread(QThread):
                 matchDetailsResponse = json.loads(matchDetailsResponse.text)
                 matchHistoryDetails.append(matchDetailsResponse)
             else:
-                print "For match " + matchId + ", " + responseMessage
+                print "For match " + matchId + ", " + responseMessage + ", from getMatchHistoryDetails method"
         matchHistoryDetailsJson = json.dumps(matchHistoryDetails)
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         fileLocation = fileLocation + '\match_history_details.txt'
         f = open(fileLocation,  'w')
         json.dump(matchHistoryDetailsJson,  f)
+        f.close()
         print "Populated match_history_details"
