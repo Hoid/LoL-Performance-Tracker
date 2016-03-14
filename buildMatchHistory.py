@@ -147,23 +147,55 @@ class BuildMatchHistory(QWidget):
             500: "internal server error", 
             503: "service unavailable"
         }
-        responseMessage = codes.get(response.status_code,  "code not recognized")
-        return responseMessage
+        responseMessage = codes.get(response.status_code,  response.status_code)
+        return str(responseMessage)
     
     def getChampionName(self, championId):
-        champions = {
-            56: "Nocturne"
-        }
-        requestURL = ("https://global.api.pvp.net/api/lol/static-data/na/v1.2/champion/" 
-                                + str(championId)
-                                + "?champData=info&api_key=" 
-                                + apiKey)
-        championNameResponse = requests.get(requestURL)
-        responseMessage = self.checkResponseCode(championNameResponse)
+        
+        # Check if config file has a section for champions
+        configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        configFileLocation = configFileLocation + "\config.ini"
+        config = SafeConfigParser()
+        config.read(configFileLocation)
+        hasSection = config.has_section('champions')
+        
+        # If so, check if we already know what the champion name is from prior API calls
+        if hasSection:
+            hasChampName = config.has_option('champions',  str(championId))
+            if hasChampName:
+                championName = config.get('champions',  str(championId))
+                return championName
+            else:
+                pass
+        
+        # If we don't have the section altogether, make it and then make the API call
+        else:
+            config.add_section('champions')
+            with open(configFileLocation, 'w') as f:
+                config.write(f)
+            config.read(configFileLocation)
+        
+        # If we get to this point, we make the API call and store the names of all champions in the config file
+        requestURL = ("https://global.api.pvp.net/api/lol/static-data/na/v1.2/champion?champData=info&api_key=9a5609ad-2d90-4aff-a09f-dc86632f3770")
+        championListResponse = requests.get(requestURL)
+        responseMessage = self.checkResponseCode(championListResponse)
         if responseMessage == "ok":
-            championNameResponse = championNameResponse.text
-            championNameResponse = json.loads(championNameResponse)
-            return championNameResponse["name"]
+            championListResponse = championListResponse.text
+            championListResponse = json.loads(championListResponse)
+            championListResponse = championListResponse["data"]
+            for champion in championListResponse:
+                championId = championListResponse[champion]["id"]
+                championName = championListResponse[champion]["name"]
+                config.set('champions', str(championId), championName)
+            with open(configFileLocation, 'w') as f:
+                config.write(f)
+            config.read(configFileLocation)
+            if config.has_option('champions',  str(championId)):
+                championName = config.get('champions',  str(championId))
+                return championName
+            else:
+                print "An error occurred in getChampionName method"
+                return "Champion name unknown"
         else:
             print responseMessage + ", from getChampionName method"
             return "Champion name unknown"

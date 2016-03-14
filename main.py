@@ -104,9 +104,8 @@ class MainWindow(QMainWindow):
         isFile = os.path.isfile(configFileLocation)
         config = SafeConfigParser()
         
-        # If the file hasn't been created, create it, add a section 'main', and set isFirstTimeOpening to True.
-        # Otherwise, see if this is still the first time opening. This is possible if the program has created the 
-        # config file but hasn't initialized it.
+        # If the file hasn't been created, create it, add a section 'main', add a section 'champions', and set 
+        # isFirstTimeOpening to True.
         if not isFile:
             print "created config file"
             file = open(configFileLocation,  'w')
@@ -117,6 +116,9 @@ class MainWindow(QMainWindow):
                 config.write(f)
             isFirstTimeOpening = True
             file.close()
+            
+        # Otherwise, see if this is still the first time opening. This is possible if the program has created the 
+        # config file but hasn't initialized it.
         else:
             config.read(configFileLocation)
             if not config.has_section('main'):
