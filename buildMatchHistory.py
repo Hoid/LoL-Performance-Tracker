@@ -176,7 +176,7 @@ class BuildMatchHistory(QWidget):
             config.read(configFileLocation)
         
         # If we get to this point, we make the API call and store the names of all champions in the config file
-        requestURL = ("https://global.api.pvp.net/api/lol/static-data/na/v1.2/champion?champData=info&api_key=9a5609ad-2d90-4aff-a09f-dc86632f3770")
+        requestURL = ("https://global.api.pvp.net/api/lol/static-data/na/v1.2/champion?champData=info&api_key=" + apiKey)
         championListResponse = requests.get(requestURL)
         responseMessage = self.checkResponseCode(championListResponse)
         if responseMessage == "ok":

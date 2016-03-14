@@ -20,19 +20,27 @@ summonerNameFull = ""
 summonerRegion = "na"
 summonerId = ""
 summonerRank = ""
-apiKey = "9a5609ad-2d90-4aff-a09f-dc86632f3770"
+apiKey = ""
 
 class MainWindow(QMainWindow):
     
     def __init__(self):
         
-        global summonerName, summonerNameFull, summonerId, summonerRegion,  summonerRank
+        global summonerName, summonerNameFull, summonerId, summonerRegion, summonerRank, apiKey
         super(QMainWindow,  self).__init__()
         
-        # load UI
+        # Load UI
         self.ui = uic.loadUi('C:/Users/cheek/Documents/Code/LoL-Performance-Tracker/MainWindow.ui',  self)
         
-        # set up or read config.ini
+        # Pull api_key from internal file
+        apiKeyFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        apiKeyFileLocation = apiKeyFileLocation + "\\api_key.txt"
+        with open(apiKeyFileLocation, 'r+') as f:
+            apiKey = f.read()
+        if not apiKey:
+            print "no API Key available"
+        
+        # Set up or read config.ini
         self.processConfigFile()
         
         if summonerName:
@@ -108,14 +116,13 @@ class MainWindow(QMainWindow):
         # isFirstTimeOpening to True.
         if not isFile:
             print "created config file"
-            file = open(configFileLocation,  'w')
-            config.read(configFileLocation)
-            config.add_section('main')
-            config.set('main',  'isFirstTimeOpening',  'True')
-            with open(configFileLocation, 'w') as f:
-                config.write(f)
-            isFirstTimeOpening = True
-            file.close()
+            with open(configFileLocation,  'w') as file:
+                config.read(configFileLocation)
+                config.add_section('main')
+                config.set('main',  'isFirstTimeOpening',  'True')
+                with open(configFileLocation, 'w') as f:
+                    config.write(f)
+                isFirstTimeOpening = True
             
         # Otherwise, see if this is still the first time opening. This is possible if the program has created the 
         # config file but hasn't initialized it.
