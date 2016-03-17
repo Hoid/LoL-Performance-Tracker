@@ -1,4 +1,4 @@
-# Filename: workerThreads.py
+# Filename: WorkerThreads.py
 #
 # Description: This file contains a worker thread that populates match_history.txt
 # and match_history_details.txt. 
@@ -12,9 +12,8 @@ from ConfigParser import SafeConfigParser
 
 class MatchHistoryWorkerThread(QThread):
     
-    def __init__(self, mainWindow):
+    def __init__(self):
         super(QThread,  self).__init__()
-        self.mainWindow = mainWindow
     
     def run(self):
         global apiKey
@@ -23,7 +22,10 @@ class MatchHistoryWorkerThread(QThread):
         config = SafeConfigParser()
         config.read(configFileLocation)
         summonerId = config.get('main',  'summonerId')
-        apiKey = config.get('main',  'apiKey')
+        apiKeyFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        apiKeyFileLocation = apiKeyFileLocation + "\\api_key.txt"
+        with open(apiKeyFileLocation, 'r') as f:
+            apiKey = f.read()
         
         self.getMatchHistoryDetails(summonerId)
     
@@ -37,7 +39,7 @@ class MatchHistoryWorkerThread(QThread):
             500: "internal server error", 
             503: "service unavailable"
         }
-        responseMessage = codes.get(response.status_code,  "response code not recognized")
+        responseMessage = codes.get(response.status_code,  "response code" + response.status_code + " not recognized")
         return responseMessage
     
     def getMatchHistory(self,  summonerId):
@@ -54,9 +56,9 @@ class MatchHistoryWorkerThread(QThread):
             fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
             fileLocation = fileLocation + '\match_history.txt'
             f = open(fileLocation,  'w')
-            json.dump(matchHistoryResponse,  f)
             f.close()
             
+            json.dump(matchHistoryResponse,  f)
             # Decode match history from json and return it
             matchHistoryResponse = json.loads(matchHistoryResponse)
             return matchHistoryResponse

@@ -1,10 +1,10 @@
-# Filename: buildMatchHistory.py
+# Filename: MatchHistoryBuilder.py
 #
-# Description: This file contains the buildMatchHistory class that parses match_history.txt
+# Description: This file contains the MatchHistoryBuilder class that parses match_history.txt
 # and match_history_details.txt, creates averages for the user, and builds the UI assets
 # that hold match information to be put into the matchHistoryScrollArea container.
 
-import sys, os
+import sys, os, time
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -15,32 +15,57 @@ from ConfigParser import SafeConfigParser
 
 apiKey = ""
 
-class BuildMatchHistory(QWidget):
+class MatchHistoryBuilder(QWidget):
     
-    def __init__(self):
+    def __init__(self, mainWindow):
         super(QWidget,  self).__init__()
+        self.mainWindow = mainWindow
         config = SafeConfigParser()
         configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         configFileLocation = configFileLocation + "\config.ini"
         config.read(configFileLocation)
-        apiKey = config.get('main', 'apiKey')
+        apiKeyFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        apiKeyFileLocation = apiKeyFileLocation + "\\api_key.txt"
+        with open(apiKeyFileLocation, 'r') as f:
+            apiKey = f.read()
     
-    def buildMatch(self, matchIndex):
+    def buildMatch(self, summonerId, matchIndex, matchId):
+        # This method takes the matchIndex and matchId as an input, builds a match object, and returns it. 
+        # Globals: none
         
-        # Open match_history.txt and store json data in matchHistoryData
+        # Open match_history.txt and load json data to matchHistoryData
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         fileLocation = fileLocation + '\match_history.txt'
-        f = open(fileLocation,  'r')
-        matchHistoryData = json.load(f)
-        matchHistoryData = json.loads(matchHistoryData)
+        with open(fileLocation,  'r') as f:
+            matchHistoryData = json.load(f)
+        
+        # If match_history_details.txt isn't yet a file, create it
+        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        fileLocation = fileLocation + '\match_history_details.txt'
+        isFile = os.path.isfile(fileLocation)
+        if not isFile:
+            with open(fileLocation, 'w') as newFile:
+                print "Created match_history_details.txt"
+                matchHistoryDetails = {}
+                json.dump(matchHistoryDetails, newFile)
+        
+        # Open match_history_details and check whether we have match data for the matchID in question. If we do, 
+        # continue. If not, call getMatchDetails for the match and store that data in match_history_details.txt.
+        with open(fileLocation, 'r') as f:
+            matchHistoryDetails = json.load(f)
+        if str(matchId) not in matchHistoryDetails.keys():
+            matchDetails = self.getMatchDetails(summonerId, matchId)
+            while not matchDetails:
+                time.sleep(1)
+                matchDetails = self.getMatchDetails(summonerId, matchId)
+            matchHistoryDetails[matchId] = matchDetails
+            with open(fileLocation, 'w') as f:
+                json.dump(matchHistoryDetails, f)
         
         # Load champion name and lane from matchHistoryData
         championId = matchHistoryData["matches"][matchIndex]["champion"]
         championName = self.getChampionName(championId)
         lane = matchHistoryData["matches"][matchIndex]["lane"].lower().capitalize()
-        
-        # Close the open file
-        f.close()
         
         # Build the match GroupBox itself with the champion name played as the title
         match = QGroupBox(championName)
@@ -104,40 +129,15 @@ class BuildMatchHistory(QWidget):
         
         return match
     
-    def buildMatchHistory(self,  mainWindow):
-        
-        # Open match_history.txt and store json data in matchHistoryData
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        fileLocation = fileLocation + '\match_history.txt'
-        f = open(fileLocation,  'r')
-        matchHistoryData = json.load(f)
-        matchHistoryData = json.loads(matchHistoryData)
-        
-        # Find the number of matches in matchHistoryData
-        numberOfMatches = matchHistoryData["totalGames"]
-        
-        # Close the open file
-        f.close()
-        
-        # Container Widget       
-        widget = QWidget()
-        # Layout of Container Widget
-        layout = QVBoxLayout(self)
-        for matchIndex in range(numberOfMatches):
-            match = self.buildMatch(matchIndex)
-            layout.addWidget(match)
-        widget.setLayout(layout)
-        
-        # Scroll Area Properties
-        matchHistory = mainWindow.ui.matchHistoryScrollArea
-        matchHistory.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        matchHistory.setWidgetResizable(True)
-        matchHistory.setWidget(widget)
-    
     def calculateAverages(self):
         pass
     
     def checkResponseCode(self,  response):
+        # This method takes the API call response as input and returns a response message
+        # If the code was as expected of a successful request, we return "ok". Otherwise we return
+        # a response message that corresponds to the code.
+        # Globals: none
+        
         codes = {
             200: "ok", 
             400: "bad request", 
@@ -147,10 +147,13 @@ class BuildMatchHistory(QWidget):
             500: "internal server error", 
             503: "service unavailable"
         }
-        responseMessage = codes.get(response.status_code,  response.status_code)
+        responseMessage = codes.get(response.status_code,  "response code" + str(response.status_code) + " not recognized")
         return str(responseMessage)
     
     def getChampionName(self, championId):
+        # This method takes the championId as input and returns the champion name associated with it
+        # If our config file doesn't have the champion name
+        # Globals: none
         
         # Check if config file has a section for champions
         configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
@@ -180,8 +183,7 @@ class BuildMatchHistory(QWidget):
         championListResponse = requests.get(requestURL)
         responseMessage = self.checkResponseCode(championListResponse)
         if responseMessage == "ok":
-            championListResponse = championListResponse.text
-            championListResponse = json.loads(championListResponse)
+            championListResponse = json.loads(championListResponse.text)
             championListResponse = championListResponse["data"]
             for champion in championListResponse:
                 championId = championListResponse[champion]["id"]
@@ -194,11 +196,41 @@ class BuildMatchHistory(QWidget):
                 championName = config.get('champions',  str(championId))
                 return championName
             else:
-                print "An error occurred in getChampionName method"
-                return "Champion name unknown"
+                print "An error occurred while trying to write the config file, from in getChampionName method"
+                return None
         else:
             print responseMessage + ", from getChampionName method"
-            return "Champion name unknown"
+            return None
+    
+    def getMatchHistory(self,  summonerId):
+        # This method takes the summonerId as input and fetches basic match history data and 
+        # returns it as a usable json object
+        # Globals: none
+        
+        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/36099514?seasons=SEASON2016&api_key=3f731482-dfa2-4e64-ba57-9b3d31e98ad0")
+        matchHistoryResponse = requests.get(requestURL)
+        responseMessage = self.checkResponseCode(matchHistoryResponse)
+        if responseMessage == "ok":
+            matchHistoryResponse = json.loads(matchHistoryResponse.text)
+            return matchHistoryResponse
+        else:
+            print responseMessage + ", from getMatchHistory method"
+            return None
+
+    def getMatchDetails(self,  summonerId, matchId):
+        # This method takes the summonerId and matchId as inputs and fetches detailed match history data 
+        # for the match indicated and returns it as a usable json object
+        # Globals: none
+        
+        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.2/match/" + str(matchId) + "?api_key=3f731482-dfa2-4e64-ba57-9b3d31e98ad0")
+        matchDetailsResponse = requests.get(requestURL)
+        responseMessage = self.checkResponseCode(matchDetailsResponse)
+        if responseMessage == "ok":
+            matchDetailsResponse = json.loads(matchDetailsResponse.text)
+            return matchDetailsResponse
+        else:
+            print "For match " + str(matchId) + ", " + responseMessage + ", from getMatchDetails method"
+            return None 
     
     def parseMatchHistoryDetails(self):
         pass
