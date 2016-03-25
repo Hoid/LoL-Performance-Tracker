@@ -15,19 +15,26 @@ from ConfigParser import SafeConfigParser
 
 apiKey = ""
 
-class MatchHistoryBuilder(QWidget):
+class MatchHistoryBuilder(QMainWindow):
     
     def __init__(self, mainWindow):
-        super(QWidget,  self).__init__()
+        super(QMainWindow,  self).__init__()
         self.mainWindow = mainWindow
         config = SafeConfigParser()
         configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         configFileLocation = configFileLocation + "\config.ini"
         config.read(configFileLocation)
-        apiKeyFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        apiKeyFileLocation = apiKeyFileLocation + "\\api_key.txt"
-        with open(apiKeyFileLocation, 'r') as f:
-            apiKey = f.read()
+        global apiKey
+        apiKey = str(config.get('main',  'apiKey'))
+        if not apiKey:
+            # Pull api_key from internal file
+            print "Was forced to use api_key.txt in MatchHistoryBuilder"
+            apiKeyFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+            apiKeyFileLocation = apiKeyFileLocation + "\\api_key.txt"
+            with open(apiKeyFileLocation, 'r') as f:
+                apiKey = f.read()
+            if not apiKey:
+                print "no API Key available"
     
     def buildMatch(self, summonerId, matchIndex, matchId):
         # This method takes the matchIndex and matchId as an input, builds a match object, and returns it. 
@@ -152,7 +159,8 @@ class MatchHistoryBuilder(QWidget):
     
     def getChampionName(self, championId):
         # This method takes the championId as input and returns the champion name associated with it
-        # If our config file doesn't have the champion name
+        # If our config file doesn't have the champion name, it makes an API call to get a list of all 
+        # champion names and stores them in config
         # Globals: none
         
         # Check if config file has a section for champions
