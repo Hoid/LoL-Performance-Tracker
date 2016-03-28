@@ -14,6 +14,7 @@ import requests,  json
 from ConfigParser import SafeConfigParser
 
 from MatchHistoryBuilder import MatchHistoryBuilder
+from WorkerThreads import InitMatchHistory
 
 summonerName = ""
 summonerNameFull = ""
@@ -32,6 +33,10 @@ class MainWindow(QMainWindow):
         # Load UI
         self.ui = uic.loadUi('C:/Users/cheek/Documents/Code/LoL-Performance-Tracker/MainWindow.ui',  self)
         
+        # Connect the Refresh match history button to the appropriate method and set the window icon
+        self.refreshMatchHistoryButton.clicked.connect(self.refreshMatchHistory)
+        self.setWindowIcon(QIcon('app_icon.png'))
+        
         # Set up or read config.ini
         self.processConfigFile()
         
@@ -40,36 +45,45 @@ class MainWindow(QMainWindow):
         if summonerRank:
             self.ui.summonerRank.setText(summonerRank)
         
-        # What I want to do:
-        #       Match history shouldn't start building until we are done initializing the program and showing it. Move all match 
-        #       history stuff back into the MatchHistoryBuilder class and initialize this class once the MainWindow is initialized.
-        #       If we already have match history data in files, start a new thread that reads it and displays it. Don't keep the
-        #       program from starting until this thread is done.
-        #       If we have data displayed and the user hits the refresh button, pull a new match list from Riot, 
-        #           store it in match_history.txt, identify new matches, pull details for those matches (5 at a time), 
-        #           append them to match_history_details.txt, build the new matches, and add them to the UI
-        #       If we don't have data yet, initialize match history doing what we do above but for all matches, because all are new
+        self.ui.show()
         
-        # New way of building UI:
-        #       Initialize the mainWindow just like normal. It won't have anything there because we haven't built it yet.
-        #       Start a new thread that calls buildMatchHistory just like we do below, but after we start the app, from main probably.
-        #       Remove the widget we have in the scroll area at the time first, then add the new widget with new match history stuff.
+        self.matchHistoryBuilder = MatchHistoryBuilder()
         
-        self.matchHistoryBuilder = MatchHistoryBuilder(self)
-        
-        # If match_history.txt exists, call buildMatchHistory. If not, call getMatchHistory first, then call buildMatchHistory.
+        # If match_history.txt exists, call buildMatchHistory. If not, initialize match history files, then call buildMatchHistory.
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         fileLocation = fileLocation + '\match_history.txt'
         isFile = os.path.isfile(fileLocation)
         if isFile:
-            self.buildMatchHistory()
+            # self.buildMatchHistory()
+            pass
         else:
-            matchHistoryResponse = matchHistoryBuilder.getMatchHistory(summonerId)
+            
+            # Pull match history and store in match_history.txt
             fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
             fileLocation = fileLocation + '\match_history.txt'
-            with open(fileLocation,  'w') as f:
-                json.dump(matchHistoryResponse,  f)
-            self.buildMatchHistory()
+            with open(fileLocation, 'w') as newFile:
+                matchHistoryData = self.matchHistoryBuilder.getMatchHistory(summonerId)
+                json.dump(matchHistoryData, newFile)
+            numberOfMatches = matchHistoryData["totalGames"]
+            
+            # Create a progress bar to show progress of pulling match history data into files
+            self.initMatchHistoryProgressDialog = QProgressDialog(self)
+            self.initMatchHistoryProgressDialog.setMinimum(1)
+            self.initMatchHistoryProgressDialog.setMaximum(numberOfMatches)
+            self.initMatchHistoryProgressDialog.setFixedSize(600, 300)
+            self.initMatchHistoryProgressDialog.setWindowTitle("Getting match history data")
+            self.initMatchHistoryProgressDialog.show()
+            
+            # Spawn a new thread that initializes the match history files. When the thread is finished, call buildMatchHistory().
+            self.initMatchHistoryWorkerThread = QThread(self)
+            self.initMatchHistory = InitMatchHistory()
+            self.initMatchHistory.moveToThread(self.initMatchHistoryWorkerThread)
+            self.initMatchHistory.matchDetailsPulled.connect(self.incrementProgressBar)
+            QObject.connect(self.initMatchHistoryWorkerThread, SIGNAL('started()'), self.initMatchHistory.run)
+            QObject.connect(self.initMatchHistory, SIGNAL('finished()'), self.initMatchHistoryWorkerThread.quit)
+            QObject.connect(self.initMatchHistory, SIGNAL('finished()'), self.initMatchHistory.deleteLater)
+            QObject.connect(self.initMatchHistoryWorkerThread, SIGNAL('finished()'), self.initMatchHistoryWorkerThread.deleteLater)
+            self.initMatchHistoryWorkerThread.start()
     
     def buildMatchHistory(self):
         # This method takes whatever matches are in match_history.txt, calls MatchHistoryBuilder.buildMatch() on each, 
@@ -175,6 +189,16 @@ class MainWindow(QMainWindow):
         else:
             print responseMessage
             return "Could not get summoner rank"
+    
+    def incrementProgressBar(self, matchIndex):
+        # This method increments the progress bar that shows our progress in populating match history files
+        # Globals: self.ui.initMatchHistoryProgressBar
+        
+        self.initMatchHistoryProgressDialog.setLabelText("Pulling data for match %s. " % matchIndex +  
+                                                                            "\nThis process will only happen the " +
+                                                                            "\n first time you run the application.")
+        value = self.initMatchHistoryProgressDialog.value() + 1
+        self.initMatchHistoryProgressDialog.setValue(value)
 
     def processConfigFile(self):
         # This method sets up and processes the config file we use to store useful data between sessions of
@@ -265,6 +289,12 @@ class MainWindow(QMainWindow):
                     with open(configFileLocation, 'w') as f:
                         config.write(f)
 
+    def refreshMatchHistory(self):
+    # This method creates a new thread that builds a new match history, then calls addMatchHistoryLayout
+    # Globals: none
+    
+        print "Refreshing match history"
+
     def showSummonerQueryDialog(self):
         # This method opens an input dialog box for the user to input their summoner name and API key
         # Globals: summonerName
@@ -292,7 +322,6 @@ def main():
     
     app = QApplication(sys.argv)
     mainWindow = MainWindow()
-    mainWindow.show()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':

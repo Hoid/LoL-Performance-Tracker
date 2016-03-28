@@ -15,11 +15,11 @@ from ConfigParser import SafeConfigParser
 
 apiKey = ""
 
-class MatchHistoryBuilder(QMainWindow):
+class MatchHistoryBuilder(QObject):
     
-    def __init__(self, mainWindow):
-        super(QMainWindow,  self).__init__()
-        self.mainWindow = mainWindow
+    def __init__(self):
+        super(QObject,  self).__init__()
+        #self.mainWindow = mainWindow
         config = SafeConfigParser()
         configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
         configFileLocation = configFileLocation + "\config.ini"
@@ -69,12 +69,12 @@ class MatchHistoryBuilder(QMainWindow):
             with open(fileLocation, 'w') as f:
                 json.dump(matchHistoryDetails, f)
         
-        # Load champion name and lane from matchHistoryData
+        # Load champion name from getChampionName() and lane from matchHistoryData
         championId = matchHistoryData["matches"][matchIndex]["champion"]
         championName = self.getChampionName(championId)
         lane = matchHistoryData["matches"][matchIndex]["lane"].lower().capitalize()
         
-        # Build the match GroupBox itself with the champion name played as the title
+        # Build the match GroupBox itself with the champion name as the title
         match = QGroupBox(championName)
         match.setFixedHeight(170)
         match.setFixedWidth(940)

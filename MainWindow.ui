@@ -93,6 +93,19 @@
        </property>
       </widget>
      </widget>
+     <widget class="QPushButton" name="refreshMatchHistoryButton">
+      <property name="geometry">
+       <rect>
+        <x>840</x>
+        <y>20</y>
+        <width>161</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Refresh</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="compareTab">
      <attribute name="title">
@@ -100,7 +113,7 @@
      </attribute>
     </widget>
    </widget>
-   <widget class="QGroupBox" name="groupBox">
+   <widget class="QGroupBox" name="summonerInfoGroupBox">
     <property name="geometry">
      <rect>
       <x>50</x>
