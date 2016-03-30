@@ -251,6 +251,7 @@ class MainWindow(QMainWindow):
             config.set('main',  'summonerId',  str(summonerId))
             config.set('main',  'summonerRank',  summonerRank)
             config.set('main',  'isFirstTimeOpening',  'False')
+            config.set('main',  'apiKey',  apiKey)
             with open(configFileLocation, 'w') as f:
                 config.write(f)
         else: 
@@ -274,7 +275,7 @@ class MainWindow(QMainWindow):
             config.set('main', 'apiKey', apiKey)
         else:
             if config.has_option('main', 'apiKey'):
-                apiKey = config.get('main', 'apiKey')
+                apiKey = str(config.get('main', 'apiKey'))
             # Pull api_key from internal file
             else:
                 print "Was forced to use api_key.txt in MainWindow"
