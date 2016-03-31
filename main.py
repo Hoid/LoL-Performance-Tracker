@@ -31,7 +31,9 @@ class MainWindow(QMainWindow):
         super(QMainWindow,  self).__init__()
         
         # Load UI
-        self.ui = uic.loadUi('C:/Users/cheek/Documents/Code/LoL-Performance-Tracker/MainWindow.ui',  self)
+        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        fileLocation = fileLocation + '\MainWindow.ui'
+        self.ui = uic.loadUi(fileLocation,  self)
         
         # Connect the Refresh match history button to the appropriate method and set the window icon
         self.refreshMatchHistoryButton.clicked.connect(self.refreshMatchHistory)
