@@ -13,66 +13,49 @@ from PyQt4 import uic
 import requests,  json
 from ConfigParser import SafeConfigParser
 
-apiKey = ""
-
 class MatchHistoryBuilder(QObject):
     
     def __init__(self):
         super(QObject,  self).__init__()
         #self.mainWindow = mainWindow
-        config = SafeConfigParser()
-        configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        configFileLocation = configFileLocation + "\config.ini"
-        config.read(configFileLocation)
-        global apiKey
-        apiKey = str(config.get('main',  'apiKey'))
-        if not apiKey:
+        self.config = SafeConfigParser()
+        configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\config.ini"
+        self.config.read(configFileLocation)
+        self.apiKey = str(self.config.get('main',  'apiKey'))
+        if not self.apiKey:
             # Pull api_key from internal file
             print "Was forced to use api_key.txt in MatchHistoryBuilder"
-            apiKeyFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-            apiKeyFileLocation = apiKeyFileLocation + "\\api_key.txt"
+            apiKeyFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\\api_key.txt"
             with open(apiKeyFileLocation, 'r') as f:
-                apiKey = f.read()
-            if not apiKey:
+                self.apiKey = f.read()
+            if not self.apiKey:
                 print "no API Key available"
+        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
+        with open(fileLocation, 'r') as f:
+            self.matchHistoryList = json.load(f)
+        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
+        with open(fileLocation, 'r') as f:
+            self.matchHistoryDetails = json.load(f)
     
     def buildMatch(self, summonerId, matchIndex, matchId):
         # This method takes the matchIndex and matchId as an input, builds a match object, and returns it. 
         # Globals: none
         
-        # Open match_history.txt and load json data to matchHistoryData
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        fileLocation = fileLocation + '\match_history.txt'
-        with open(fileLocation,  'r') as f:
-            matchHistoryData = json.load(f)
-        
-        # If match_history_details.txt isn't yet a file, create it
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        fileLocation = fileLocation + '\match_history_details.txt'
-        isFile = os.path.isfile(fileLocation)
-        if not isFile:
-            with open(fileLocation, 'w') as newFile:
-                print "Created match_history_details.txt"
-                matchHistoryDetails = {}
-                json.dump(matchHistoryDetails, newFile)
-        
-        # Open match_history_details and check whether we have match data for the matchID in question. If we do, 
+        # Check whether we have match data for the matchID in question. If we do, 
         # continue. If not, call getMatchDetails for the match and store that data in match_history_details.txt.
-        with open(fileLocation, 'r') as f:
-            matchHistoryDetails = json.load(f)
-        if str(matchId) not in matchHistoryDetails.keys():
+        if str(matchId) not in self.matchHistoryDetails.keys():
             matchDetails = self.getMatchDetails(summonerId, matchId)
             while not matchDetails:
                 time.sleep(1)
                 matchDetails = self.getMatchDetails(summonerId, matchId)
-            matchHistoryDetails[matchId] = matchDetails
+            self.matchHistoryDetails[matchId] = matchDetails
             with open(fileLocation, 'w') as f:
-                json.dump(matchHistoryDetails, f)
+                json.dump(self.matchHistoryDetails, f)
         
-        # Load champion name from getChampionName() and lane from matchHistoryData
-        championId = matchHistoryData["matches"][matchIndex]["champion"]
+        # Load champion name from getChampionName() and lane from matchHistoryList
+        championId = self.matchHistoryList["matches"][matchIndex]["champion"]
         championName = self.getChampionName(championId)
-        lane = matchHistoryData["matches"][matchIndex]["lane"].lower().capitalize()
+        lane = self.matchHistoryList["matches"][matchIndex]["lane"].lower().capitalize()
         
         # Build the match GroupBox itself with the champion name as the title
         match = QGroupBox(championName)
@@ -164,30 +147,28 @@ class MatchHistoryBuilder(QObject):
         # Globals: none
         
         # Check if config file has a section for champions
-        configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-        configFileLocation = configFileLocation + "\config.ini"
-        config = SafeConfigParser()
-        config.read(configFileLocation)
-        hasSection = config.has_section('champions')
+        configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\config.ini"
+        self.config.read(configFileLocation)
+        hasSection = self.config.has_section('champions')
         
         # If so, check if we already know what the champion name is from prior API calls
         if hasSection:
-            hasChampName = config.has_option('champions',  str(championId))
+            hasChampName = self.config.has_option('champions',  str(championId))
             if hasChampName:
-                championName = config.get('champions',  str(championId))
+                championName = self.config.get('champions',  str(championId))
                 return championName
             else:
                 pass
         
         # If we don't have the section altogether, make it and then make the API call
         else:
-            config.add_section('champions')
+            self.config.add_section('champions')
             with open(configFileLocation, 'w') as f:
-                config.write(f)
-            config.read(configFileLocation)
+                self.config.write(f)
+            self.config.read(configFileLocation)
         
         # If we get to this point, we make the API call and store the names of all champions in the config file
-        requestURL = ("https://global.api.pvp.net/api/lol/static-data/na/v1.2/champion?champData=info&api_key=" + apiKey)
+        requestURL = ("https://global.api.pvp.net/api/lol/static-data/na/v1.2/champion?champData=info&api_key=" + self.apiKey)
         championListResponse = requests.get(requestURL)
         responseMessage = self.checkResponseCode(championListResponse)
         if responseMessage == "ok":
@@ -196,12 +177,12 @@ class MatchHistoryBuilder(QObject):
             for champion in championListResponse:
                 championId = championListResponse[champion]["id"]
                 championName = championListResponse[champion]["name"]
-                config.set('champions', str(championId), championName)
+                self.config.set('champions', str(championId), championName)
             with open(configFileLocation, 'w') as f:
-                config.write(f)
-            config.read(configFileLocation)
-            if config.has_option('champions',  str(championId)):
-                championName = config.get('champions',  str(championId))
+                self.config.write(f)
+            self.config.read(configFileLocation)
+            if self.config.has_option('champions',  str(championId)):
+                championName = self.config.get('champions',  str(championId))
                 return championName
             else:
                 print "An error occurred while trying to write the config file, from in getChampionName method"
@@ -215,7 +196,9 @@ class MatchHistoryBuilder(QObject):
         # returns it as a usable json object
         # Globals: none
         
-        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/36099514?seasons=SEASON2016&api_key=3f731482-dfa2-4e64-ba57-9b3d31e98ad0")
+        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/" 
+                                + str(summonerId) + "?seasons=SEASON2016&api_key=" 
+                                + self.apiKey)
         matchHistoryResponse = requests.get(requestURL)
         responseMessage = self.checkResponseCode(matchHistoryResponse)
         if responseMessage == "ok":
@@ -230,7 +213,9 @@ class MatchHistoryBuilder(QObject):
         # for the match indicated and returns it as a usable json object
         # Globals: none
         
-        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.2/match/" + str(matchId) + "?api_key=3f731482-dfa2-4e64-ba57-9b3d31e98ad0")
+        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.2/match/" 
+                                + str(matchId) + "?api_key=" 
+                                + self.apiKey)
         matchDetailsResponse = requests.get(requestURL)
         responseMessage = self.checkResponseCode(matchDetailsResponse)
         if responseMessage == "ok":
