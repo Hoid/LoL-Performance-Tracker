@@ -27,6 +27,13 @@ class MainWindow(QMainWindow):
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\MainWindow.ui' 
         self.ui = uic.loadUi(fileLocation,  self)
         
+        aboutAction = QAction('&About', self) 
+        aboutAction.setStatusTip('About this application')
+        aboutAction.triggered.connect(self.createAboutDialog)
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&About')
+        fileMenu.addAction(aboutAction)
+        
         self.matchHistoryList = {}
         self.matchHistoryDetails = {}
         
@@ -119,6 +126,18 @@ class MainWindow(QMainWindow):
             event.accept()
         else:
             event.ignore()
+    
+    def createAboutDialog(self):
+        # This method creates a dialog that shows the 
+        # Globals: 
+        
+        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\\about.txt'
+        with open(fileLocation, 'r') as f:
+            aboutText = f.read()
+        self.aboutDialog = QMessageBox(self)
+        self.aboutDialog.setWindowTitle("About")
+        self.aboutDialog.setText(aboutText)
+        self.aboutDialog.show()
     
     def incrementProgressBar(self, matchIndex):
         # This method increments the progress bar that shows our progress in populating match history files
