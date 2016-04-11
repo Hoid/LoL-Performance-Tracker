@@ -4,7 +4,7 @@
 # and match_history_details.txt, creates averages for the user, and builds the UI assets
 # that hold match information to be put into the matchHistoryScrollArea container.
 
-import sys, os, time
+import sys, os
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -17,7 +17,7 @@ class MatchHistoryBuilder(QObject):
     
     def __init__(self):
         super(QObject,  self).__init__()
-        #self.mainWindow = mainWindow
+        
         self.config = SafeConfigParser()
         configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\config.ini"
         self.config.read(configFileLocation)
@@ -30,12 +30,6 @@ class MatchHistoryBuilder(QObject):
                 self.apiKey = f.read()
             if not self.apiKey:
                 print "no API Key available"
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
-        with open(fileLocation, 'r') as f:
-            self.matchHistoryList = json.load(f)
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
-        with open(fileLocation, 'r') as f:
-            self.matchHistoryDetails = json.load(f)
     
     def buildMatch(self, summonerId, matchIndex, matchId):
         # This method takes the matchIndex and matchId as an input, builds a match object, and returns it. 
@@ -43,14 +37,11 @@ class MatchHistoryBuilder(QObject):
         
         # Check whether we have match data for the matchID in question. If we do, 
         # continue. If not, call getMatchDetails for the match and store that data in match_history_details.txt.
-        if str(matchId) not in self.matchHistoryDetails.keys():
-            matchDetails = self.getMatchDetails(summonerId, matchId)
-            while not matchDetails:
-                time.sleep(1)
-                matchDetails = self.getMatchDetails(summonerId, matchId)
-            self.matchHistoryDetails[matchId] = matchDetails
-            with open(fileLocation, 'w') as f:
-                json.dump(self.matchHistoryDetails, f)
+        matchId = int(matchId)
+        knownMatchIds = self.matchHistoryDetails.keys()
+        knownMatchIds = map(int, knownMatchIds)
+        if matchId not in knownMatchIds:
+            self.matchHistoryDetails[matchId] = self.getMatchDetails(summonerId, matchId)
         
         # Load champion name from getChampionName() and lane from matchHistoryList
         championId = self.matchHistoryList["matches"][matchIndex]["champion"]
@@ -196,9 +187,7 @@ class MatchHistoryBuilder(QObject):
         # returns it as a usable json object
         # Globals: none
         
-        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/" 
-                                + str(summonerId) + "?seasons=SEASON2016&api_key=" 
-                                + self.apiKey)
+        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.2/matchlist/by-summoner/" + str(summonerId) + "?seasons=SEASON2016&api_key=" + self.apiKey)
         matchHistoryResponse = requests.get(requestURL)
         responseMessage = self.checkResponseCode(matchHistoryResponse)
         if responseMessage == "ok":
@@ -227,3 +216,10 @@ class MatchHistoryBuilder(QObject):
     
     def parseMatchHistoryDetails(self):
         pass
+    
+    def updateMatchHistoryVariables(self, newMatchHistoryList, matchHistoryDetails):
+        # This method refreshes the self.matchHistoryList and self.matchHistoryDetails variables in this class.
+        # Globals: self.matchHistoryList, self.matchHistoryDetails
+        
+        self.matchHistoryList = newMatchHistoryList
+        self.matchHistoryDetails = matchHistoryDetails

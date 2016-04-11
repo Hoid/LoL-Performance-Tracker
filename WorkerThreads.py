@@ -1,7 +1,6 @@
 # Filename: WorkerThreads.py
 #
-# Description: This file contains a worker thread that populates match_history.txt
-# and match_history_details.txt. 
+# Description: This file contains worker thread objects that other classes can run.
 
 import sys, os, time
 
@@ -14,10 +13,13 @@ from MatchHistoryBuilder import MatchHistoryBuilder
 class InitMatchHistory(QObject):
     
     matchDetailsPulled = pyqtSignal(object)
+    newMatchHistoryValues = pyqtSignal(object, object)
     finished = pyqtSignal()
     
-    def __init__(self):
+    def __init__(self, matchHistoryList, matchHistoryDetails):
         super(QObject,  self).__init__()
+        self.matchHistoryList = matchHistoryList
+        self.matchHistoryDetails = matchHistoryDetails
     
     def run(self):
     
@@ -27,38 +29,35 @@ class InitMatchHistory(QObject):
         self.summonerId = config.get('main',  'summonerId')
         
         self.matchHistoryBuilder = MatchHistoryBuilder()
+        self.matchHistoryBuilder.updateMatchHistoryVariables(self.matchHistoryList, self.matchHistoryDetails)
         
-        # Open match_history.txt and read json data into matchHistoryList
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
-        with open(fileLocation,  'r') as f:
-            matchHistoryList = json.load(f)
-        matchHistoryList = matchHistoryList["matches"]
+        matchHistoryList = self.matchHistoryList["matches"]
         
-        # For each match in match history, open match_history_details and check whether we have match data for the 
-        # matchID in question. If not, call getMatchDetails for the match and store that data in match_history_details.txt.
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
-        with open(fileLocation, 'r') as f:
-                matchHistoryDetails = json.load(f)
+        # For each match in match history, check whether we have match data in matchHistoryDetails for the 
+        # matchID in question. If not, call getMatchDetails for the match and store that data in matchHistoryDetails.
         for matchIndex, matchInstance in enumerate(matchHistoryList):
-            matchId = matchInstance["matchId"]
-            if str(matchId) not in matchHistoryDetails.keys():
+            matchId = int(matchInstance["matchId"])
+            if matchId not in self.matchHistoryDetails.keys():
                 matchDetails = self.matchHistoryBuilder.getMatchDetails(self.summonerId, matchId)
                 if not matchDetails:
                     time.sleep(10)
                     matchDetails = self.matchHistoryBuilder.getMatchDetails(self.summonerId, matchId)
-                matchHistoryDetails[matchId] = matchDetails
+                self.matchHistoryDetails[matchId] = matchDetails
                 self.matchDetailsPulled.emit(str(matchIndex))
-                with open(fileLocation, 'w') as f:
-                    json.dump(matchHistoryDetails, f)
+        
+        self.newMatchHistoryValues.emit(self.matchHistoryList, self.matchHistoryDetails)
         
         self.finished.emit()
 
 class RefreshMatchHistory(QObject):
     
+    newMatchHistoryValues = pyqtSignal(object, object)
     finished = pyqtSignal()
     
-    def __init__(self):
+    def __init__(self, oldMatchHistoryList, matchHistoryDetails):
         super(QObject,  self).__init__()
+        self.oldMatchHistoryList = oldMatchHistoryList
+        self.matchHistoryDetails = matchHistoryDetails
     
     def run(self):
     
@@ -68,44 +67,23 @@ class RefreshMatchHistory(QObject):
         self.summonerId = config.get('main',  'summonerId')
         
         self.matchHistoryBuilder = MatchHistoryBuilder()
-        
-        try:
-            
-            # Open match_history.txt and read json data into oldMatchHistoryList
-            fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
-            with open(fileLocation,  'r') as f:
-                    oldMatchHistoryList = json.load(f)
-            oldMatches = oldMatchHistoryList["matches"]
-            
-            # Open match_history_details.txt and read json data into matchHistoryDetails
-            fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
-            with open(fileLocation, 'r') as f:
-                    matchHistoryDetails = json.load(f)
-            
-            # Call getMatchHistory and for any new matches, call getMatchDetails and update match_history_details.txt
-            newMatchHistoryList = self.matchHistoryBuilder.getMatchHistory(self.summonerId)
-            newMatches = newMatchHistoryList["matches"]
-            numberOfNewMatches = newMatchHistoryList["totalGames"] - oldMatchHistoryList["totalGames"]
-            while numberOfNewMatches > 0:
-                matchId = newMatches[numberOfNewMatches-1]["matchId"]
-                if str(matchId) not in matchHistoryDetails.keys():
-                    matchDetails = self.matchHistoryBuilder.getMatchDetails(self.summonerId, matchId)
-                    if not matchDetails:
-                        time.sleep(10)
-                        matchDetails = self.matchHistoryBuilder.getMatchDetails(self.summonerId, matchId)
-                    matchHistoryDetails[matchId] = matchDetails
-                numberOfNewMatches -= 1
-            with open(fileLocation, 'w') as f:
-                json.dump(matchHistoryDetails, f)
+        self.matchHistoryBuilder.updateMatchHistoryVariables(self.oldMatchHistoryList, self.matchHistoryDetails)
+        self.newMatchHistoryList = self.matchHistoryBuilder.getMatchHistory(self.summonerId)
 
-            # When done, store the new match history in match_history.txt
-            fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
-            with open(fileLocation, 'w') as f:
-                json.dump(newMatchHistoryList, f)
-                print "Updated match_history.txt"
-            
-        except IOError:
-            print "One or both of the match history files are missing, from refreshMatchHistory"
+        # Call getMatchHistory and for any new matches, call getMatchDetails and update match_history_details.txt
+        newMatches = self.newMatchHistoryList["matches"]
+        numberOfNewMatches = self.newMatchHistoryList["totalGames"] - self.oldMatchHistoryList["totalGames"]
+        while numberOfNewMatches > 0:
+            matchId = int(newMatches[numberOfNewMatches-1]["matchId"])
+            if matchId not in self.matchHistoryDetails.keys():
+                matchDetails = self.matchHistoryBuilder.getMatchDetails(self.summonerId, matchId)
+                if not matchDetails:
+                    time.sleep(10)
+                    matchDetails = self.matchHistoryBuilder.getMatchDetails(self.summonerId, matchId)
+                self.matchHistoryDetails[matchId] = matchDetails
+            numberOfNewMatches -= 1
         
-        finally:
-            self.finished.emit()
+        # When done, send the new match history variable values back to MainWindow
+        self.newMatchHistoryValues.emit(self.newMatchHistoryList, self.matchHistoryDetails)
+
+        self.finished.emit()

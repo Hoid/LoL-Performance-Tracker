@@ -6,7 +6,7 @@
  None,
  False,
  False,
- <PyInstaller.utils.win32.winmanifest.Manifest object at 0x000000000529D898>,
+ <PyInstaller.utils.win32.winmanifest.Manifest object at 0x00000000045F20F0>,
  True,
  'LoL-Performance-Tracker.pkg',
  [('out00-PYZ.pyz',
@@ -37,7 +37,7 @@
  [],
  False,
  False,
- 1460090574L,
+ 1460391465L,
  [('run.exe',
    'c:\\python27\\lib\\site-packages\\PyInstaller\\bootloader\\Windows-64bit\\run.exe',
    'EXECUTABLE')])

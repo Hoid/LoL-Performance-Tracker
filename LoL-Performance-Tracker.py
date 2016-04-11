@@ -15,13 +15,7 @@ from ConfigParser import SafeConfigParser
 
 from MatchHistoryBuilder import MatchHistoryBuilder
 from WorkerThreads import InitMatchHistory,  RefreshMatchHistory
-
-summonerName = ""
-summonerNameFull = ""
-summonerRegion = "na"
-summonerId = ""
-summonerRank = ""
-apiKey = ""
+from Summoner import Summoner
 
 class MainWindow(QMainWindow):
     
@@ -33,20 +27,21 @@ class MainWindow(QMainWindow):
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\MainWindow.ui' 
         self.ui = uic.loadUi(fileLocation,  self)
         
-        self.refreshMatchHistoryButton.clicked.connect(self.refreshMatchHistory)
+        self.matchHistoryList = {}
+        self.matchHistoryDetails = {}
         
         self.processConfigFile()
         
-        if summonerName:
-            self.ui.summonerNameLabel.setText(summonerNameFull)
-        if summonerRank:
-            self.ui.summonerRank.setText(summonerRank)
+        self.ui.summonerNameLabel.setText(self.summoner.fullName)
+        self.ui.summonerRank.setText(self.summoner.rank)
+        
+        self.refreshMatchHistoryButton.clicked.connect(self.refreshEvent)
         
         self.ui.show()
         
-        self.processMatchHistoryFiles()
-        
         self.matchHistoryBuilder = MatchHistoryBuilder()
+        self.processMatchHistoryFiles()
+        self.matchHistoryBuilder.updateMatchHistoryVariables(self.matchHistoryList, self.matchHistoryDetails)
         
         # If matchHistoryDetails is just an empty directory, call initMatchHistory(). Once the thread
         # finishes, buildMatchHistory() will be called. If it's not empty, simply call buildMatchHistory().
@@ -58,13 +53,12 @@ class MainWindow(QMainWindow):
     def buildMatchHistory(self):
         # This method takes whatever matches are in self.matchHistoryList, calls MatchHistoryBuilder.buildMatch() on each, 
         # and builds the GUI objects for the match history into the matchHistoryScrollArea.
-        # Globals: self.matchHistoryBuilder
+        # Globals: self.matchHistoryBuilder, self.matchHistoryList, self.matchHistoryDetails
         
         print "Entered buildMatchHistory"
         
-        # Pull self.matchHistoryList into a local variable
-        matchHistoryListData = self.matchHistoryList
-        matchHistoryListData = matchHistoryListData["matches"]
+        self.matchHistoryBuilder.updateMatchHistoryVariables(self.matchHistoryList, self.matchHistoryDetails)
+        matchHistoryListData = self.matchHistoryList["matches"]
         
         # Scroll Area Properties
         self.matchHistory = self.ui.matchHistoryScrollArea
@@ -77,11 +71,13 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         for matchIndex, matchInstance in enumerate(matchHistoryListData):
             matchId = matchInstance["matchId"]
-            match = self.matchHistoryBuilder.buildMatch(summonerId, matchIndex, matchId)
+            match = self.matchHistoryBuilder.buildMatch(self.summoner.id, matchIndex, matchId)
             layout.addWidget(match)
         widget.setLayout(layout)
     
         self.matchHistory.setWidget(widget)
+        
+        self.updateMatchHistoryVariables(self.matchHistoryBuilder.matchHistoryList, self.matchHistoryBuilder.matchHistoryDetails)
     
     def checkResponseCode(self,  response):
         # This method takes the API call response as input and returns a response message
@@ -112,57 +108,17 @@ class MainWindow(QMainWindow):
                                                     QMessageBox.Yes, 
                                                     QMessageBox.No)
         if reply == QMessageBox.Yes:
-            fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
-            with open(fileLocation, 'w') as f:
-                json.dump(self.matchHistoryList, f)
-            fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
-            with open(fileLocation, 'w') as f:
-                json.dump(self.matchHistoryDetails, f)
+            if self.matchHistoryList:
+                fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
+                with open(fileLocation, 'w') as f:
+                    f.write(json.dumps(self.matchHistoryList))
+            if self.matchHistoryDetails:
+                fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
+                with open(fileLocation, 'w') as f:
+                    f.write(json.dumps(self.matchHistoryDetails))
             event.accept()
         else:
             event.ignore()
-    
-    def getSummonerInfo(self):
-        # This method fetches summoner info using a summoner name and sets the summonerId and 
-        # summonerNameFull variables. 
-        # Globals: summonerId, summonerName, summonerNameFull
-        
-        global summonerId,  summonerName,  summonerNameFull
-        requestURL = ("https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/" 
-                                + summonerName 
-                                + "?api_key=" 
-                                + apiKey)
-        summonerInfoResponse = requests.get(requestURL)
-        responseMessage = self.checkResponseCode(summonerInfoResponse)
-        if responseMessage == "ok":
-            summonerInfoResponse = json.loads(summonerInfoResponse.text)
-            summonerId = summonerInfoResponse[summonerName]["id"]
-            summonerNameFull = summonerInfoResponse[summonerName]["name"]
-        else:
-            print responseMessage
-
-    def getSummonerRank(self):
-        # This method fetches summoner rank using summoner Id, builds a string containing the information,
-        #  and returns it
-        # Globals: none
-        
-        summonerIdStr = str(summonerId)
-        requestURL = ("https://na.api.pvp.net/api/lol/na/v2.5/league/by-summoner/" 
-                                + summonerIdStr 
-                                + "/entry?api_key=" 
-                                + apiKey)
-        summonerInfoResponse = requests.get(requestURL)
-        responseMessage = self.checkResponseCode(summonerInfoResponse)
-        if responseMessage == "ok":
-            summonerInfoResponse = json.loads(summonerInfoResponse.text)
-            summonerTier = summonerInfoResponse[summonerIdStr][0]["tier"].lower().capitalize()
-            summonerDivision = summonerInfoResponse[summonerIdStr][0]["entries"][0]["division"]
-            summonerLp = summonerInfoResponse[summonerIdStr][0]["entries"][0]["leaguePoints"]
-            summonerRank = summonerTier + " " + summonerDivision + ", " + str(summonerLp) + "lp"
-            return summonerRank
-        else:
-            print responseMessage
-            return "Could not get summoner rank"
     
     def incrementProgressBar(self, matchIndex):
         # This method increments the progress bar that shows our progress in populating match history files
@@ -181,18 +137,14 @@ class MainWindow(QMainWindow):
         
         self.initMatchHistoryProgressDialog()
         
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
-        with open(fileLocation, 'w') as f:
-            json.dump(self.matchHistoryDetails, f)
-        
         self.initMatchHistoryWorkerThread = QThread(self)
-        self.initMatchHistory = InitMatchHistory()
+        self.initMatchHistory = InitMatchHistory(self.matchHistoryList, self.matchHistoryDetails)
         self.initMatchHistory.moveToThread(self.initMatchHistoryWorkerThread)
         self.initMatchHistory.matchDetailsPulled.connect(self.incrementProgressBar)
+        self.initMatchHistory.newMatchHistoryValues.connect(self.updateMatchHistoryVariables)
         QObject.connect(self.initMatchHistoryWorkerThread, SIGNAL('started()'), self.initMatchHistory.run)
         QObject.connect(self.initMatchHistory, SIGNAL('finished()'), self.initMatchHistoryWorkerThread.quit)
         QObject.connect(self.initMatchHistory, SIGNAL('finished()'), self.initMatchHistory.deleteLater)
-        QObject.connect(self.initMatchHistory, SIGNAL('finished()'), self.buildMatchHistory)
         QObject.connect(self.initMatchHistoryWorkerThread, SIGNAL('finished()'), self.initMatchHistoryWorkerThread.deleteLater)
         self.initMatchHistory.finished.connect(self.buildMatchHistory)
         self.initMatchHistoryWorkerThread.start()
@@ -201,6 +153,7 @@ class MainWindow(QMainWindow):
         # This method creates a progress bar to show the progress of initializing match history files.
         # Globals: none
         
+        numberOfMatches = self.matchHistoryList["totalGames"]
         self.initMatchHistoryProgressDialog = QProgressDialog(self)
         self.initMatchHistoryProgressDialog.setMinimum(1)
         self.initMatchHistoryProgressDialog.setMaximum(numberOfMatches)
@@ -211,89 +164,54 @@ class MainWindow(QMainWindow):
     def processConfigFile(self):
         # This method sets up and processes the config file we use to store useful data between sessions of the application. 
         # We read things like summonerId and summonerName on startup to reduce unnecessary API calls on startup.
-        # Globals: summonerName, summonerNameFull, summonerId, summonerRegion,  summonerRank
+        # Globals: self.summoner
         
-        global summonerName, summonerNameFull, summonerId, summonerRegion,  summonerRank
         configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\config.ini"
         isFile = os.path.isfile(configFileLocation)
         config = SafeConfigParser()
+        config.read(configFileLocation)
         
-        # If the file hasn't been created, create it, add a section 'main', add a section 'champions', and set 
-        # isFirstTimeOpening to True.
+        # If the file hasn't been created, create it, add a section 'main', and set shouldInit to True.
+        # Otherwise, if the file hasn't been initialized correctly, set shouldInit to True.
         if not isFile:
-            print "created config file"
-            with open(configFileLocation,  'w') as file:
+            print "Created config file"
+            with open(configFileLocation,  'w') as configFile:
+                config.add_section('main')
+                config.set('main',  'isFirstTimeOpening',  'True')
+                config.write(configFile)
                 config.read(configFileLocation)
-                config.add_section('main')
-                config.set('main',  'isFirstTimeOpening',  'True')
-                with open(configFileLocation, 'w') as f:
-                    config.write(f)
-                isFirstTimeOpening = True
-            
-        # Otherwise, see if this is still the first time opening. This is possible if the program has created the 
-        # config file but hasn't initialized it.
-        else:
+                shouldInit = True
+        elif not config.has_section('main'):
+            config.add_section('main')
+            with open(configFileLocation,  'w') as configFile:
+                config.write(configFile)
             config.read(configFileLocation)
-            if not config.has_section('main'):
-                config.add_section('main')
-                config.set('main',  'isFirstTimeOpening',  'True')
-                with open(configFileLocation, 'w') as f:
-                    config.write(f)
-                config.read(configFileLocation) 
-            isFirstTimeOpening = config.get('main',  'isFirstTimeOpening')
-            if isFirstTimeOpening == "False":
-                isFirstTimeOpening = False
-            else:
-                isFirstTimeOpening = True
+            shouldInit = True
+        else:
+            shouldInit = False
         
         # If this is the first time opening, initialize important values.
         # Otherwise, read values from the file.
-        if isFirstTimeOpening:
+        if shouldInit:
             self.showSummonerQueryDialog()
-            self.getSummonerInfo()
-            summonerRank = self.getSummonerRank()
-            config.set('main',  'summonerName',  summonerName)
-            config.set('main',  'summonerNameFull',  summonerNameFull)
-            config.set('main',  'summonerId',  str(summonerId))
-            config.set('main',  'summonerRank',  summonerRank)
+            self.summoner = Summoner(self.internalSummonerName, self.apiKey)
+            self.summoner.pullSummonerInfo()
+            config.set('main',  'summonerName',  self.summoner.internalName)
+            config.set('main',  'summonerNameFull',  self.summoner.fullName)
+            config.set('main',  'summonerId',  str(self.summoner.id))
+            config.set('main',  'summonerRank',  self.summoner.rank)
             config.set('main',  'isFirstTimeOpening',  'False')
-            config.set('main',  'apiKey',  apiKey)
-            with open(configFileLocation, 'w') as f:
-                config.write(f)
-        else: 
-            config.read(configFileLocation)
-            hasMainSection = config.has_section('main')
-            if not hasMainSection:
-                config.add_section('main')
-                with open(configFileLocation, 'w') as f:
-                    config.write(f)
-                config.read(configFileLocation)
-            # read summoner info from config file
-            summonerName = config.get('main',  'summonerName')
-            summonerNameFull = config.get('main',  'summonerNameFull')
-            summonerId = config.get('main',  'summonerId')
-            summonerRank = config.get('main',  'summonerRank')
-        
-        # Ensure the api key in config file is correct. If needed, pull the key from api_key.txt.
-        config.read(configFileLocation)
-        global apiKey
-        if apiKey:
-            config.set('main', 'apiKey', apiKey)
+            config.set('main',  'apiKey',  self.apiKey)
+            with open(configFileLocation, 'w') as configFile:
+                    config.write(configFile)
         else:
-            if config.has_option('main', 'apiKey'):
-                apiKey = str(config.get('main', 'apiKey'))
-            # Pull api_key from internal file
-            else:
-                print "Was forced to use api_key.txt in MainWindow"
-                apiKeyFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\\api_key.txt"
-                with open(apiKeyFileLocation, 'r') as f:
-                    apiKey = f.read()
-                if not apiKey:
-                    print "no API Key available"
-                else:
-                    config.set('main', 'apiKey', apiKey)
-                    with open(configFileLocation, 'w') as f:
-                        config.write(f)
+            config.read(configFileLocation)
+            self.internalSummonerName = config.get('main',  'summonerName')
+            self.apiKey = config.get('main',  'apiKey')
+            self.summoner = Summoner(self.internalSummonerName, self.apiKey)
+            self.summoner.fullName = config.get('main',  'summonerNameFull')
+            self.summoner.id = config.get('main',  'summonerId')
+            self.summoner.rank = config.get('main',  'summonerRank')
     
     def processMatchHistoryFiles(self):
         # This method ensures that the match history files exist, that they are initialized, and that the self.matchHistoryList and 
@@ -308,15 +226,15 @@ class MainWindow(QMainWindow):
             with open(fileLocation, 'w') as newFile:
                 print "Created and initialized match_history_details.txt"
                 matchHistoryDetailsData = {}
-                json.dump(matchHistoryDetailsData, newFile)
+                newFile.write(json.dumps(self.matchHistoryDetails))
         else:
             with open(fileLocation, 'r') as f:
-                matchHistoryDetailsData = json.load(f)
-        if not matchHistoryDetailsData:
+                matchHistoryDetailsData = json.loads(f.read())
+        if matchHistoryDetailsData is None:
             with open(fileLocation, 'w') as f:
                 print "Initialized match_history_details.txt"
                 matchHistoryDetailsData = {}
-                json.dump(matchHistoryDetailsData, f)
+                f.write(json.dumps(self.matchHistoryDetails))
         self.matchHistoryDetails = matchHistoryDetailsData
         
         # If match_history.txt isn't yet a file, create it and initialize it with match history data. If it is, make sure it's not empty.
@@ -326,29 +244,35 @@ class MainWindow(QMainWindow):
         if not isFile:
             with open(fileLocation, 'w') as newFile:
                 print "Created and initialized match_history.txt"
-                matchHistoryListData = self.matchHistoryBuilder.getMatchHistory(summonerId)
-                json.dump(matchHistoryListData, newFile)
+                matchHistoryListData = self.matchHistoryBuilder.getMatchHistory(self.summoner.id)
+                newFile.write(json.dumps(self.matchHistoryList))
         else:
             with open(fileLocation, 'r') as f:
-                matchHistoryListData = json.load(f)
-        if not matchHistoryListData:
+                matchHistoryListData = json.loads(f.read())
+        if matchHistoryListData is None:
             with open(fileLocation, 'w') as f:
                 print "Initialized match_history.txt"
-                matchHistoryListData = self.matchHistoryBuilder.getMatchHistory(summonerId)
-                json.dump(matchHistoryListData, f)
+                matchHistoryListData = self.matchHistoryBuilder.getMatchHistory(self.summoner.id)
+                newFile.write(json.dumps(self.matchHistoryList))
         self.matchHistoryList = matchHistoryListData
+    
+    def refreshEvent(self):
+        # This method is the result of the user pressing the refresh button. 
+        # Globals: none
+        
+        self.summoner.pullSummonerInfo()
+        self.ui.summonerNameLabel.setText(self.summoner.fullName)
+        self.ui.summonerRank.setText(self.summoner.rank)
+        self.refreshMatchHistory()
 
     def refreshMatchHistory(self):
-    # This method creates a new thread that builds a new match history, only downloading game details for new games.
-    # Globals: none
-    
-        fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
-        with open(fileLocation, 'w') as f:
-            json.dump(self.matchHistoryDetails, f)
+        # This method creates a new thread that builds a new match history, only downloading game details for new games.
+        # Globals: none
         
         self.refreshMatchHistoryWorkerThread = QThread(self)
-        self.refreshMatchHistory = RefreshMatchHistory()
+        self.refreshMatchHistory = RefreshMatchHistory(self.matchHistoryList, self.matchHistoryDetails)
         self.refreshMatchHistory.moveToThread(self.refreshMatchHistoryWorkerThread)
+        self.refreshMatchHistory.newMatchHistoryValues.connect(self.updateMatchHistoryVariables)
         QObject.connect(self.refreshMatchHistoryWorkerThread, SIGNAL('started()'), self.refreshMatchHistory.run)
         QObject.connect(self.refreshMatchHistoryWorkerThread, SIGNAL('finished()'), self.refreshMatchHistoryWorkerThread.deleteLater)
         QObject.connect(self.refreshMatchHistory, SIGNAL('finished()'), self.refreshMatchHistoryWorkerThread.quit)
@@ -357,28 +281,34 @@ class MainWindow(QMainWindow):
         self.refreshMatchHistoryWorkerThread.start()
 
     def showSummonerQueryDialog(self):
-        # This method opens an input dialog box for the user to input their summoner name and API key
-        # Globals: summonerName
+        # This method opens an input dialog box for the user to input their full summoner name (the name we show them
+        # in the UI) and API key
+        # Globals: self.fullSummonerName, self.apiKey
         
-        summonerNameInput, ok = QInputDialog.getText(self, 'Summoner info', 
-            'Enter your summoner name:')
-        if ok:
-            global summonerName
-            summonerName = str(summonerNameInput).replace(" ", "").lower()
+        summonerNameInput, ok = QInputDialog.getText(self, 'Summoner info', 'Enter your summoner name:')
+        if ok and summonerNameInput:
+            self.internalSummonerName = str(summonerNameInput).replace(" ", "").lower()
         else:
-            self.closeApplication()
+            sys.exit()
         
-        apiKeyInput, ok = QInputDialog.getText(self, 'API Key', 
-            'Enter your API Key:')
-        if ok:
-            global apiKey
-            apiKey = str(apiKeyInput).replace(" ", "").lower()
+        apiKeyInput, ok = QInputDialog.getText(self, 'API Key', 'Enter your API Key:')
+        if ok and apiKeyInput:
+            self.apiKey = str(apiKeyInput).replace(" ", "").lower()
         else:
-            self.closeApplication()
+            sys.exit()
+    
+    def updateMatchHistoryVariables(self, newMatchHistoryList, matchHistoryDetails):
+        # This method refreshes the self.matchHistoryList and self.matchHistoryDetails variables in this class and calls 
+        # methods to do the same in other classes.
+        # Globals: self.matchHistoryList, self.matchHistoryDetails
+        
+        self.matchHistoryList = newMatchHistoryList
+        self.matchHistoryDetails = matchHistoryDetails
+        self.matchHistoryBuilder.updateMatchHistoryVariables(newMatchHistoryList, matchHistoryDetails)
 
 
 def main():
-    # This method makes an instance of MainWindow and starts the application
+    # This method makes an instance of MainWindow and starts the application.
     # Globals: none
     
     app = QApplication(sys.argv)
