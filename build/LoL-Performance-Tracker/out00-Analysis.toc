@@ -1,4 +1,4 @@
-(['C:\\Users\\cheek\\Documents\\Code\\LoL-Performance-Tracker\\LoL-Performance-Tracker.py'],
+(['LoL-Performance-Tracker.py'],
  ['C:\\Users\\cheek\\Documents\\Code\\LoL-Performance-Tracker',
   'C:\\Users\\cheek\\Documents\\Code\\LoL-Performance-Tracker'],
  ['codecs'],

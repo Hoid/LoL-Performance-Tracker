@@ -106,6 +106,25 @@
        <string>Refresh</string>
       </property>
      </widget>
+     <widget class="QLabel" name="workingLabel">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>670</x>
+        <y>20</y>
+        <width>151</width>
+        <height>51</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">font: 10pt &quot;Century Gothic&quot;;</string>
+      </property>
+      <property name="text">
+       <string>Working...</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="compareTab">
      <attribute name="title">
@@ -137,8 +156,17 @@
        <height>71</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <family>Century Gothic</family>
+       <pointsize>16</pointsize>
+       <weight>50</weight>
+       <italic>false</italic>
+       <bold>false</bold>
+      </font>
+     </property>
      <property name="styleSheet">
-      <string notr="true">font: 14pt &quot;Verdana&quot;;</string>
+      <string notr="true">font: 16pt &quot;Century Gothic&quot;;</string>
      </property>
      <property name="text">
       <string>summonerName</string>
@@ -157,7 +185,7 @@
       <enum>Qt::LeftToRight</enum>
      </property>
      <property name="styleSheet">
-      <string notr="true">font: 9pt &quot;Verdana&quot;;</string>
+      <string notr="true">font: 11pt &quot;Century Gothic&quot;;</string>
      </property>
      <property name="text">
       <string>summonerRank</string>

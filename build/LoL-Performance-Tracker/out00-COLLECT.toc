@@ -98,6 +98,8 @@
   ('pywintypes27.dll',
    'c:\\python27\\lib\\site-packages\\pywin32_system32\\pywintypes27.dll',
    'BINARY'),
+  ('MainWindow.ui', 'MainWindow.ui', 'DATA'),
+  ('about.txt', 'about.txt', 'DATA'),
   ('requests\\cacert.pem',
    'c:\\python27\\lib\\site-packages\\requests\\cacert.pem',
    'DATA'),

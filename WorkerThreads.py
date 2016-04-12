@@ -49,7 +49,7 @@ class InitMatchHistory(QObject):
         
         self.finished.emit()
 
-class RefreshMatchHistory(QObject):
+class RebuildMatchHistory(QObject):
     
     newMatchHistoryValues = pyqtSignal(object, object)
     finished = pyqtSignal()

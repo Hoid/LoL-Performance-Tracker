@@ -14,18 +14,19 @@ import requests,  json
 from ConfigParser import SafeConfigParser
 
 from MatchHistoryBuilder import MatchHistoryBuilder
-from WorkerThreads import InitMatchHistory,  RefreshMatchHistory
+from WorkerThreads import InitMatchHistory,  RebuildMatchHistory
 from Summoner import Summoner
 
 class MainWindow(QMainWindow):
     
     def __init__(self):
         
-        global summonerName, summonerNameFull, summonerId, summonerRegion, summonerRank, apiKey
         super(QMainWindow,  self).__init__()
         
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\MainWindow.ui' 
         self.ui = uic.loadUi(fileLocation,  self)
+        
+        self.ui.workingLabel.hide()
         
         aboutAction = QAction('&About', self) 
         aboutAction.setStatusTip('About this application')
@@ -62,7 +63,7 @@ class MainWindow(QMainWindow):
         # and builds the GUI objects for the match history into the matchHistoryScrollArea.
         # Globals: self.matchHistoryBuilder, self.matchHistoryList, self.matchHistoryDetails
         
-        print "Entered buildMatchHistory"
+        self.showWorkingLabel()
         
         self.matchHistoryBuilder.updateMatchHistoryVariables(self.matchHistoryList, self.matchHistoryDetails)
         matchHistoryListData = self.matchHistoryList["matches"]
@@ -85,6 +86,8 @@ class MainWindow(QMainWindow):
         self.matchHistory.setWidget(widget)
         
         self.updateMatchHistoryVariables(self.matchHistoryBuilder.matchHistoryList, self.matchHistoryBuilder.matchHistoryDetails)
+        
+        self.hideWorkingLabel()
     
     def checkResponseCode(self,  response):
         # This method takes the API call response as input and returns a response message
@@ -138,6 +141,12 @@ class MainWindow(QMainWindow):
         self.aboutDialog.setWindowTitle("About")
         self.aboutDialog.setText(aboutText)
         self.aboutDialog.show()
+    
+    def hideWorkingLabel(self):
+        # This method hides the working label to indicate that the app is done working on something.
+        # Globals: self.ui.workingLabel
+        
+        self.ui.workingLabel.hide()
     
     def incrementProgressBar(self, matchIndex):
         # This method increments the progress bar that shows our progress in populating match history files
@@ -279,25 +288,41 @@ class MainWindow(QMainWindow):
         # This method is the result of the user pressing the refresh button. 
         # Globals: none
         
+        self.showWorkingLabel()
+        
         self.summoner.pullSummonerInfo()
         self.ui.summonerNameLabel.setText(self.summoner.fullName)
         self.ui.summonerRank.setText(self.summoner.rank)
+        
+        configFileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + "\config.ini"
+        config = SafeConfigParser()
+        config.read(configFileLocation)
+        config.set('main',  'summonerName',  self.summoner.internalName)
+        config.set('main',  'summonerNameFull',  self.summoner.fullName)
+        config.set('main',  'summonerId',  str(self.summoner.id))
+        config.set('main',  'summonerRank',  self.summoner.rank)
+        config.set('main',  'isFirstTimeOpening',  'False')
+        config.set('main',  'apiKey',  self.apiKey)
+        with open(configFileLocation, 'w') as configFile:
+            config.write(configFile)
+        
         self.refreshMatchHistory()
 
     def refreshMatchHistory(self):
         # This method creates a new thread that builds a new match history, only downloading game details for new games.
         # Globals: none
         
-        self.refreshMatchHistoryWorkerThread = QThread(self)
-        self.refreshMatchHistory = RefreshMatchHistory(self.matchHistoryList, self.matchHistoryDetails)
-        self.refreshMatchHistory.moveToThread(self.refreshMatchHistoryWorkerThread)
-        self.refreshMatchHistory.newMatchHistoryValues.connect(self.updateMatchHistoryVariables)
-        QObject.connect(self.refreshMatchHistoryWorkerThread, SIGNAL('started()'), self.refreshMatchHistory.run)
-        QObject.connect(self.refreshMatchHistoryWorkerThread, SIGNAL('finished()'), self.refreshMatchHistoryWorkerThread.deleteLater)
-        QObject.connect(self.refreshMatchHistory, SIGNAL('finished()'), self.refreshMatchHistoryWorkerThread.quit)
-        QObject.connect(self.refreshMatchHistory, SIGNAL('finished()'), self.refreshMatchHistory.deleteLater)
-        self.refreshMatchHistory.finished.connect(self.buildMatchHistory)
-        self.refreshMatchHistoryWorkerThread.start()
+        self.rebuildMatchHistoryWorkerThread = QThread(self)
+        self.rebuildMatchHistory = RebuildMatchHistory(self.matchHistoryList, self.matchHistoryDetails)
+        self.rebuildMatchHistory.moveToThread(self.rebuildMatchHistoryWorkerThread)
+        self.rebuildMatchHistory.newMatchHistoryValues.connect(self.updateMatchHistoryVariables)
+        QObject.connect(self.rebuildMatchHistoryWorkerThread, SIGNAL('started()'), self.rebuildMatchHistory.run)
+        QObject.connect(self.rebuildMatchHistoryWorkerThread, SIGNAL('finished()'), self.rebuildMatchHistoryWorkerThread.deleteLater)
+        QObject.connect(self.rebuildMatchHistory, SIGNAL('finished()'), self.rebuildMatchHistoryWorkerThread.quit)
+        QObject.connect(self.rebuildMatchHistory, SIGNAL('finished()'), self.rebuildMatchHistory.deleteLater)
+        self.rebuildMatchHistory.finished.connect(self.buildMatchHistory)
+        self.rebuildMatchHistory.finished.connect(self.hideWorkingLabel)
+        self.rebuildMatchHistoryWorkerThread.start()
 
     def showSummonerQueryDialog(self):
         # This method opens an input dialog box for the user to input their full summoner name (the name we show them
@@ -315,6 +340,12 @@ class MainWindow(QMainWindow):
             self.apiKey = str(apiKeyInput).replace(" ", "").lower()
         else:
             sys.exit()
+    
+    def showWorkingLabel(self):
+        # This method shows the working label to indicate that the app is working on something.
+        # Globals: self.ui.workingLabel
+        
+        self.ui.workingLabel.show()
     
     def updateMatchHistoryVariables(self, newMatchHistoryList, matchHistoryDetails):
         # This method refreshes the self.matchHistoryList and self.matchHistoryDetails variables in this class and calls 

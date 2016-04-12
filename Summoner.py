@@ -1,4 +1,4 @@
-# Filename: WorkerThreads.py
+# Filename: Summoner.py
 #
 # Description: This file contains the Summoner class that defines certain information about the summoner,
 # such as name, id, and rank. Use this class by instantiating it and calling the getter methods needed. 
@@ -65,7 +65,7 @@ class Summoner:
             summonerDivision = summonerInfoResponse[str(self.id)][0]["entries"][0]["division"]
             summonerLp = summonerInfoResponse[str(self.id)][0]["entries"][0]["leaguePoints"]
             summonerRank = summonerTier + " " + summonerDivision + ", " + str(summonerLp) + "lp"
-            return summonerRank
+            self.rank = summonerRank
         else:
             print responseMessage
             return "Could not get summoner rank"
