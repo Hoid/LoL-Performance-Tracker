@@ -333,9 +333,9 @@ class MatchHistoryBuilder(QObject):
             championListResponse = json.loads(championListResponse.text)
             championListResponse = championListResponse["data"]
             for champion in championListResponse:
-                championId = championListResponse[champion]["id"]
-                championName = championListResponse[champion]["name"]
-                self.config.set('champions', str(championId), championName)
+                id = championListResponse[champion]["id"]
+                name = championListResponse[champion]["name"]
+                self.config.set('champions', str(id), name)
             with open(configFileLocation, 'w') as f:
                 self.config.write(f)
             self.config.read(configFileLocation)

@@ -249,39 +249,43 @@ class MainWindow(QMainWindow):
         # If match_history_details.txt isn't yet a file, create it and initialize it with an empty dictionary. If it is, make sure it's not empty.
         # If it's empty, meaning not having at least an empty directory, initialize it. If it's not, load matchHistoryDetailsData into self.matchHistoryDetails
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
-        isFile = os.path.isfile(fileLocation)
-        if not isFile:
+        try:
+            with open(fileLocation, 'r') as f:
+                matchHistoryDetailsData = f.read()
+        except IOError as ioe:
             with open(fileLocation, 'w') as newFile:
                 print "Created and initialized match_history_details.txt"
                 matchHistoryDetailsData = {}
                 newFile.write(json.dumps(self.matchHistoryDetails))
         else:
-            with open(fileLocation, 'r') as f:
-                matchHistoryDetailsData = json.loads(f.read())
-        if matchHistoryDetailsData is None:
-            with open(fileLocation, 'w') as f:
-                print "Initialized match_history_details.txt"
-                matchHistoryDetailsData = {}
-                f.write(json.dumps(self.matchHistoryDetails))
+            if matchHistoryDetailsData == {} or matchHistoryDetailsData == '':
+                with open(fileLocation, 'w') as f:
+                    print "Initialized match_history_details.txt"
+                    matchHistoryDetailsData = {}
+                    f.write(json.dumps(self.matchHistoryDetails))
+            else:
+                matchHistoryDetailsData = json.loads(matchHistoryDetailsData)
         self.matchHistoryDetails = matchHistoryDetailsData
         
         # If match_history.txt isn't yet a file, create it and initialize it with match history data. If it is, make sure it's not empty.
         # If it's empty, initialize it. If it's not empty, load matchHistoryListData into self.matchHistoryList
         fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
-        isFile = os.path.isfile(fileLocation)
-        if not isFile:
+        try:
+            with open(fileLocation, 'r') as f:
+                matchHistoryListData = f.read()
+        except IOError as ioe:
             with open(fileLocation, 'w') as newFile:
                 print "Created and initialized match_history.txt"
                 matchHistoryListData = self.matchHistoryBuilder.getMatchHistory(self.summoner.id)
                 newFile.write(json.dumps(self.matchHistoryList))
         else:
-            with open(fileLocation, 'r') as f:
-                matchHistoryListData = json.loads(f.read())
-        if matchHistoryListData is None:
-            with open(fileLocation, 'w') as f:
-                print "Initialized match_history.txt"
-                matchHistoryListData = self.matchHistoryBuilder.getMatchHistory(self.summoner.id)
-                newFile.write(json.dumps(self.matchHistoryList))
+            if matchHistoryListData == {} or matchHistoryListData == '':
+                with open(fileLocation, 'w') as f:
+                    print "Initialized match_history.txt"
+                    matchHistoryListData = self.matchHistoryBuilder.getMatchHistory(self.summoner.id)
+                    f.write(json.dumps(self.matchHistoryList))
+            else:
+                matchHistoryListData = json.loads(matchHistoryListData)
         self.matchHistoryList = matchHistoryListData
     
     def refreshEvent(self):

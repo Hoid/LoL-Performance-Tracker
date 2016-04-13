@@ -42,7 +42,7 @@ class InitMatchHistory(QObject):
                 if not matchDetails:
                     time.sleep(10)
                     matchDetails = self.matchHistoryBuilder.getMatchDetails(self.summonerId, matchId)
-                self.matchHistoryDetails[matchId] = matchDetails
+                self.matchHistoryDetails[unicode(matchId)] = matchDetails
                 self.matchDetailsPulled.emit(str(matchIndex))
         
         self.newMatchHistoryValues.emit(self.matchHistoryList, self.matchHistoryDetails)
@@ -80,7 +80,7 @@ class RebuildMatchHistory(QObject):
                 if not matchDetails:
                     time.sleep(10)
                     matchDetails = self.matchHistoryBuilder.getMatchDetails(self.summonerId, matchId)
-                self.matchHistoryDetails[matchId] = matchDetails
+                self.matchHistoryDetails[unicode(matchId)] = matchDetails
             numberOfNewMatches -= 1
         
         # When done, send the new match history variable values back to MainWindow

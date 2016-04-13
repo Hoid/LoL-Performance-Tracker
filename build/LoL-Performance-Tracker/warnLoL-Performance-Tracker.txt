@@ -16,12 +16,12 @@ missing module named itertools.islice - imported by itertools, repr, heapq
 missing module named itertools.ifilterfalse - imported by itertools, sets
 missing module named itertools.ifilter - imported by itertools, sets
 missing module named itertools.starmap - imported by itertools, collections
-missing module named itertools.repeat - imported by itertools, collections
+missing module named itertools.repeat - imported by itertools, collections, decimal
 missing module named itertools.imap - imported by itertools, heapq, collections
 missing module named itertools.tee - imported by itertools, heapq
 missing module named itertools.izip - imported by itertools, heapq
 missing module named itertools.count - imported by itertools, heapq, threading
-missing module named itertools.chain - imported by itertools, tokenize, heapq, collections
+missing module named itertools.chain - imported by itertools, tokenize, heapq, collections, decimal
 missing module named org.PyStringMap - imported by org, copy
 missing module named org - imported by copy
 missing module named exceptions.ReferenceError - imported by exceptions, weakref
@@ -68,16 +68,11 @@ missing module named operator._compare_digest - imported by operator, hmac
 missing module named operator.attrgetter - imported by operator, inspect, cgi
 missing module named operator.itemgetter - imported by operator, collections, heapq
 missing module named operator.eq - imported by operator, collections
-missing module named collections.OrderedDict - imported by collections, unittest.util, requests.packages.urllib3._collections, requests.compat, ConfigParser
-missing module named collections.Mapping - imported by collections, requests.packages.urllib3._collections, requests.sessions
-missing module named collections.MutableMapping - imported by collections, requests.packages.urllib3._collections
 missing module named fcntl - imported by tempfile, subprocess
 missing module named hashlib.md5 - imported by hashlib, requests.packages.urllib3.util.ssl_, uuid
 missing module named hashlib.sha1 - imported by hashlib, requests.packages.urllib3.util.ssl_, uuid
 missing module named hashlib.sha256 - imported by hashlib, requests.packages.urllib3.util.ssl_
 missing module named _hashlib.pbkdf2_hmac - imported by _hashlib, hashlib
-missing module named threading.RLock - imported by threading, _threading_local, requests.packages.urllib3._collections
-missing module named threading.current_thread - imported by threading, _threading_local
 missing module named os.urandom - imported by os, random
 missing module named math.sin - imported by math, random
 missing module named math.sqrt - imported by math, random
@@ -101,15 +96,20 @@ missing module named _io.StringIO - imported by _io, io
 missing module named _io.BufferedRWPair - imported by _io, io
 missing module named _io.TextIOWrapper - imported by _io, io
 missing module named _io.UnsupportedOperation - imported by _io, io
+missing module named collections.deque - imported by collections, shlex, threading, Queue
 missing module named nt._isdir - imported by nt, ntpath
 missing module named nt._getfullpathname - imported by nt, ntpath
 missing module named nt._exit - imported by nt, os
 missing module named readline - imported by cmd, pdb
 missing module named pwd - imported by posixpath, getpass, netrc
+missing module named collections.OrderedDict - imported by collections, unittest.util, requests.packages.urllib3._collections, requests.compat, ConfigParser
+missing module named threading.RLock - imported by threading, _threading_local, requests.packages.urllib3._collections
+missing module named threading.current_thread - imported by threading, _threading_local
+missing module named collections.namedtuple - imported by collections, inspect, unittest.util, difflib, doctest, ssl, urlparse, requests.packages.urllib3.util.url, decimal
+missing module named collections.Mapping - imported by collections, requests.packages.urllib3._collections, requests.sessions
+missing module named collections.MutableMapping - imported by collections, requests.packages.urllib3._collections
 missing module named cPickle.loads - imported by cPickle, collections, Cookie
 missing module named cPickle.dumps - imported by cPickle, collections, Cookie
-missing module named collections.deque - imported by collections, shlex, threading, Queue
-missing module named collections.namedtuple - imported by collections, inspect, unittest.util, difflib, doctest, ssl, urlparse, requests.packages.urllib3.util.url
 missing module named _collections.deque - imported by _collections, collections
 missing module named _collections.defaultdict - imported by _collections, collections
 missing module named _json.make_encoder - imported by _json, json.encoder
