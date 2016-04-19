@@ -93,7 +93,7 @@
        </property>
       </widget>
      </widget>
-     <widget class="QPushButton" name="refreshMatchHistoryButton">
+     <widget class="QPushButton" name="refreshButton">
       <property name="geometry">
        <rect>
         <x>830</x>
