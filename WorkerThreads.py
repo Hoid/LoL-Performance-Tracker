@@ -14,12 +14,14 @@ class InitMatchHistory(QObject):
     
     matchDetailsPulled = pyqtSignal(object)
     newMatchHistoryValues = pyqtSignal(object, object)
+    quitOperation = pyqtSignal()
     finished = pyqtSignal()
     
     def __init__(self, matchHistoryList, matchHistoryDetails):
         super(QObject,  self).__init__()
         self.matchHistoryList = matchHistoryList
         self.matchHistoryDetails = matchHistoryDetails
+        self.quitOperation.connect(self.exit)
     
     def run(self):
     
@@ -48,6 +50,10 @@ class InitMatchHistory(QObject):
         self.newMatchHistoryValues.emit(self.matchHistoryList, self.matchHistoryDetails)
         
         self.finished.emit()
+    
+    def exit(self):
+        
+        print "InitMatchHistory has exited"
 
 class RebuildMatchHistory(QObject):
     

@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
         self.ui.summonerNameLabel.setText(self.summoner.fullName)
         self.ui.summonerRank.setText(self.summoner.rank)
         
-        self.refreshMatchHistoryButton.clicked.connect(self.refreshEvent)
+        self.refreshButton.clicked.connect(self.refreshEvent)
         
         self.ui.show()
         
@@ -75,14 +75,18 @@ class MainWindow(QMainWindow):
         
         # Container Widget
         widget = QWidget()
+        
         # Layout of Container Widget
         layout = QVBoxLayout()
+        
+        self.matchHistoryBuilder.calculateStatistics(self.summoner.id)
+        self.matchHistoryBuilder.calculateAverages()
         for matchIndex, matchInstance in enumerate(matchHistoryListData):
             matchId = matchInstance["matchId"]
             match = self.matchHistoryBuilder.buildMatch(self.summoner.id, matchIndex, matchId)
             layout.addWidget(match)
+        
         widget.setLayout(layout)
-    
         self.matchHistory.setWidget(widget)
         
         self.updateMatchHistoryVariables(self.matchHistoryBuilder.matchHistoryList, self.matchHistoryBuilder.matchHistoryDetails)
@@ -118,6 +122,9 @@ class MainWindow(QMainWindow):
                                                     QMessageBox.Yes, 
                                                     QMessageBox.No)
         if reply == QMessageBox.Yes:
+            
+            #self.initMatchHistoryWorkerThread.quitOperation.emit()
+            
             if self.matchHistoryList:
                 fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history.txt'
                 with open(fileLocation, 'w') as f:
@@ -126,7 +133,9 @@ class MainWindow(QMainWindow):
                 fileLocation = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + '\match_history_details.txt'
                 with open(fileLocation, 'w') as f:
                     f.write(json.dumps(self.matchHistoryDetails))
+            
             event.accept()
+        
         else:
             event.ignore()
     
@@ -172,9 +181,10 @@ class MainWindow(QMainWindow):
         self.initMatchHistory.newMatchHistoryValues.connect(self.updateMatchHistoryVariables)
         QObject.connect(self.initMatchHistoryWorkerThread, SIGNAL('started()'), self.initMatchHistory.run)
         QObject.connect(self.initMatchHistory, SIGNAL('finished()'), self.initMatchHistoryWorkerThread.quit)
-        QObject.connect(self.initMatchHistory, SIGNAL('finished()'), self.initMatchHistory.deleteLater)
-        QObject.connect(self.initMatchHistoryWorkerThread, SIGNAL('finished()'), self.initMatchHistoryWorkerThread.deleteLater)
+#        QObject.connect(self.initMatchHistory, SIGNAL('finished()'), self.initMatchHistory.deleteLater)
+#        QObject.connect(self.initMatchHistoryWorkerThread, SIGNAL('finished()'), self.initMatchHistoryWorkerThread.deleteLater)
         self.initMatchHistory.finished.connect(self.buildMatchHistory)
+#        self.initMatchHistoryWorkerThread.daemon(True)
         self.initMatchHistoryWorkerThread.start()
     
     def initMatchHistoryProgressDialog(self):
@@ -321,9 +331,9 @@ class MainWindow(QMainWindow):
         self.rebuildMatchHistory.moveToThread(self.rebuildMatchHistoryWorkerThread)
         self.rebuildMatchHistory.newMatchHistoryValues.connect(self.updateMatchHistoryVariables)
         QObject.connect(self.rebuildMatchHistoryWorkerThread, SIGNAL('started()'), self.rebuildMatchHistory.run)
-        QObject.connect(self.rebuildMatchHistoryWorkerThread, SIGNAL('finished()'), self.rebuildMatchHistoryWorkerThread.deleteLater)
+#        QObject.connect(self.rebuildMatchHistoryWorkerThread, SIGNAL('finished()'), self.rebuildMatchHistoryWorkerThread.deleteLater)
         QObject.connect(self.rebuildMatchHistory, SIGNAL('finished()'), self.rebuildMatchHistoryWorkerThread.quit)
-        QObject.connect(self.rebuildMatchHistory, SIGNAL('finished()'), self.rebuildMatchHistory.deleteLater)
+#        QObject.connect(self.rebuildMatchHistory, SIGNAL('finished()'), self.rebuildMatchHistory.deleteLater)
         self.rebuildMatchHistory.finished.connect(self.buildMatchHistory)
         self.rebuildMatchHistory.finished.connect(self.hideWorkingLabel)
         self.rebuildMatchHistoryWorkerThread.start()
