@@ -67,8 +67,8 @@ class MatchHistoryBuilder(QObject):
         kdaBox = QGroupBox(match)
         wardScoreBox = QGroupBox(match)
         csPerMinBox = QGroupBox(match)
-        changeInLPLabel = QLabel(match)
         laneLabel = QLabel(match)
+        resultLabel = QLabel(match)
         
         scoreBox.setFixedWidth(130)
         scoreBox.setFixedHeight(70)
@@ -76,6 +76,7 @@ class MatchHistoryBuilder(QObject):
         scoreBox.setAlignment(Qt.AlignCenter)
         scoreBox.setTitle("score")
         scoreBox.setStyleSheet('QGroupBox {font: 8pt "Calibri"}')
+        scoreBox.setToolTip("Score, in the format of kills-deaths-assists")
         
         scoreValue = QLabel(scoreBox)
         scoreValue.setFixedWidth(130)
@@ -90,6 +91,7 @@ class MatchHistoryBuilder(QObject):
         killParticipationPercentBox.setAlignment(Qt.AlignCenter)
         killParticipationPercentBox.setTitle("Kill part. %")
         killParticipationPercentBox.setStyleSheet('QGroupBox {font: 8pt "Calibri"}')
+        killParticipationPercentBox.setToolTip("The percentage of your teams kills you contributed to")
         
         killParticipationPercentValue = QLabel(killParticipationPercentBox)
         killParticipationPercentValue.setFixedWidth(130)
@@ -104,6 +106,7 @@ class MatchHistoryBuilder(QObject):
         goldPerMinBox.setAlignment(Qt.AlignCenter)
         goldPerMinBox.setTitle("gold/min")
         goldPerMinBox.setStyleSheet('QGroupBox {font: 8pt "Calibri"}')
+        goldPerMinBox.setToolTip("Gold earned per minute")
         
         goldPerMinValue = QLabel(goldPerMinBox)
         goldPerMinValue.setFixedWidth(130)
@@ -118,6 +121,7 @@ class MatchHistoryBuilder(QObject):
         kdaBox.setAlignment(Qt.AlignCenter)
         kdaBox.setTitle("KDA")
         kdaBox.setStyleSheet('QGroupBox {font: 8pt "Calibri"}')
+        kdaBox.setToolTip("Calculated by (kills+deaths)/assists")
         
         kdaValue = QLabel(kdaBox)
         kdaValue.setFixedWidth(130)
@@ -131,6 +135,7 @@ class MatchHistoryBuilder(QObject):
         wardScoreBox.setAlignment(Qt.AlignCenter)
         wardScoreBox.setTitle("ward score")
         wardScoreBox.setStyleSheet('QGroupBox {font: 8pt "Calibri"}')
+        wardScoreBox.setToolTip("Calculated by wards placed + wards killed")
         
         wardScoreValue = QLabel(wardScoreBox)
         wardScoreValue.setFixedWidth(130)
@@ -145,6 +150,7 @@ class MatchHistoryBuilder(QObject):
         csPerMinBox.setAlignment(Qt.AlignCenter)
         csPerMinBox.setTitle("cs/min")
         csPerMinBox.setStyleSheet('QGroupBox {font: 8pt "Calibri"}')
+        csPerMinBox.setToolTip("Creeps killed per minute")
         
         csPerMinValue = QLabel(csPerMinBox)
         csPerMinValue.setFixedWidth(130)
@@ -153,13 +159,23 @@ class MatchHistoryBuilder(QObject):
         csPerMinValue.setAlignment(Qt.AlignCenter)
         csPerMinValue.setStyleSheet('color: red; font: 9pt "Calibri";')
         
-        changeInLPLabel.setGeometry(QRect(820, 90, 101, 61))
-        changeInLPLabel.setStyleSheet('font: 10pt "Calibri";')
-        
-        laneLabel.setGeometry(QRect(20, 100, 141, 51))
+        laneLabel.setGeometry(QRect(20, 120, 140, 50))
         laneLabel.setStyleSheet('font: 10pt "Calibri";')
+        laneLabel.setToolTip("Lane")
+        
+        resultLabel.setFixedWidth(120)
+        resultLabel.setFixedHeight(50)
+        resultLabel.setGeometry(QRect(780, 20, 120, 50))
+        resultLabel.setAlignment(Qt.AlignCenter)
+        resultLabel.setStyleSheet('font: 12pt "Calibri"')
+        resultLabel.setToolTip("Match result")
         
         # Set values for each item
+        matchWon = self.matchHistoryStatistics["matches"][matchId]["won"]
+        if matchWon:
+            result = "Win"
+        else:
+            result = "Loss"
         score = self.matchHistoryStatistics["matches"][matchId]["score"]
         kda = self.matchHistoryStatistics["matches"][matchId]["kda"]
         kdaAverage = self.matchHistoryStatistics["kdaAverage"]
@@ -172,16 +188,22 @@ class MatchHistoryBuilder(QObject):
         csPerMin = self.matchHistoryStatistics["matches"][matchId]["csPerMin"]
         csPerMinAverage = self.matchHistoryStatistics["csPerMinAverage"]
         lane = self.matchHistoryList["matches"][matchIndex]["lane"].lower().capitalize()
+        if lane == "Bottom":
+            lane = "Bot"
         
+        resultLabel.setText(result)
         scoreValue.setText(str(score))
         kdaValue.setText(str(kda))
         killParticipationPercentValue.setText(str(killParticipationPercent))
         wardScoreValue.setText(str(wardScore))
         goldPerMinValue.setText(str(goldPerMin))
         csPerMinValue.setText(str(csPerMin))
-        changeInLPLabel.setText("+lp")
         laneLabel.setText(lane)
         
+        if result == "Win":
+            resultLabel.setStyleSheet('color: green; font: 12pt "Calibri";')
+        else:
+            resultLabel.setStyleSheet('color: red; font: 12pt "Calibri";')
         if kda > kdaAverage:
             kdaValue.setStyleSheet('color: green; font: 9pt "Calibri";')
         else:
@@ -250,7 +272,7 @@ class MatchHistoryBuilder(QObject):
         self.matchHistoryStatistics["killParticipationPercentAverage"] = killParticipationPercentAverage
         self.matchHistoryStatistics["wardScoreAverage"] = wardScoreAverage
         self.matchHistoryStatistics["goldPerMinAverage"] = goldPerMinAverage
-        self.matchHistoryStatistics["csPerMinAverage"] = csPerMinAverage
+        self.matchHistoryStatistics["csPerMinAverage"] = csPerMinAverage\
     
     def calculateStatistics(self, summonerId):
         # This method looks at self.matchHistoryList, and for every match, looks at self.matchHistoryDetails, 
@@ -286,6 +308,10 @@ class MatchHistoryBuilder(QObject):
                 teamNumber = team["teamId"]
                 if team["teamId"] == participantTeamId:
                     participantTeamNumber = index
+            
+            # Calculate game result (win/lose)
+            matchWon = matchDetails["teams"][participantTeamNumber]["winner"]
+            self.matchHistoryStatistics["matches"][matchId]["won"] = matchWon
             
             # Calculate kda
             getcontext().prec = 3 # Sets the significant figures of precision to 3
