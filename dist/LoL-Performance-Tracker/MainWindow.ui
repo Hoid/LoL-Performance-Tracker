@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="toolTip">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Solo Queue&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <string/>
     </property>
     <property name="statusTip">
      <string/>
@@ -63,6 +63,9 @@
         <height>41</height>
        </rect>
       </property>
+      <property name="toolTip">
+       <string/>
+      </property>
       <property name="styleSheet">
        <string notr="true">font: 12pt &quot;Verdana&quot;;</string>
       </property>
@@ -78,6 +81,9 @@
         <width>971</width>
         <height>731</height>
        </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
       </property>
       <property name="widgetResizable">
        <bool>true</bool>
@@ -102,6 +108,9 @@
         <height>51</height>
        </rect>
       </property>
+      <property name="toolTip">
+       <string>Refresh</string>
+      </property>
       <property name="text">
        <string>Refresh</string>
       </property>
@@ -117,6 +126,9 @@
         <width>151</width>
         <height>51</height>
        </rect>
+      </property>
+      <property name="toolTip">
+       <string/>
       </property>
       <property name="styleSheet">
        <string notr="true">font: 10pt &quot;Century Gothic&quot;;</string>
@@ -140,6 +152,9 @@
       <width>1631</width>
       <height>111</height>
      </rect>
+    </property>
+    <property name="toolTip">
+     <string/>
     </property>
     <property name="styleSheet">
      <string notr="true">font: 8pt &quot;MS Shell Dlg 2&quot;;</string>
@@ -165,6 +180,9 @@
        <bold>false</bold>
       </font>
      </property>
+     <property name="toolTip">
+      <string notr="true"/>
+     </property>
      <property name="styleSheet">
       <string notr="true">font: 16pt &quot;Century Gothic&quot;;</string>
      </property>
@@ -180,6 +198,9 @@
        <width>261</width>
        <height>51</height>
       </rect>
+     </property>
+     <property name="toolTip">
+      <string/>
      </property>
      <property name="layoutDirection">
       <enum>Qt::LeftToRight</enum>
